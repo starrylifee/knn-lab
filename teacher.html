@@ -26,22 +26,18 @@
 </style>
 </head>
 <body>
-<!-- 대시보드 비밀번호 잠금 (선생님 본인 확인) -->
+<!-- 교사 구글 로그인 (내 학급 목록을 어느 컴퓨터에서든 불러오기 위한 본인 확인) -->
 <div id="dash-lock" class="landing" style="display:none">
-  <h1>🔒 교사 대시보드</h1>
-  <p class="sub" id="lock-sub">선생님 비밀번호를 입력하세요.</p>
+  <h1>🧑‍🏫 교사 대시보드</h1>
+  <p class="sub">구글 계정으로 로그인하면, 내가 만든 학급이 <strong>어느 컴퓨터에서든</strong> 그대로 보여요.</p>
   <div class="panel-card" style="border-radius:18px; width:min(430px, 92vw)">
-    <div class="field"><label id="lock-label">비밀번호</label>
-      <input id="lock-pass" type="password" placeholder="4자리 이상 숫자·글자" autocomplete="off"></div>
-    <div class="field" id="lock-confirm-wrap" style="display:none"><label>비밀번호 확인</label>
-      <input id="lock-pass2" type="password" placeholder="한 번 더 입력" autocomplete="off"></div>
-    <button class="btn" id="lock-btn" style="width:100%">들어가기</button>
+    <button class="btn" id="google-login-btn" style="width:100%; font-size:1.1rem">
+      <svg width="18" height="18" viewBox="0 0 48 48" style="vertical-align:-3px; margin-right:8px"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C41 35.3 44 30.1 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+      구글 계정으로 로그인
+    </button>
     <p id="lock-err" style="color:var(--bad); font-weight:700; margin-top:0.6rem"></p>
-    <p class="hint" id="lock-reset" style="margin-top:0.8rem; display:none">
-      비밀번호를 잊으셨나요? <a href="#" id="lock-forget" style="color:var(--brand-deep); font-weight:700">이 기기에서 초기화</a>
-      <span style="display:block">(내 학급 목록만 지워져요. 학급 데이터는 코드+PIN으로 다시 불러올 수 있어요.)</span></p>
-    <p class="hint" style="margin-top:0.8rem">이 비밀번호는 <strong>이 컴퓨터에만 저장되는 기기 잠금</strong>이에요.
-      처음 쓰는 컴퓨터에서는 새로 정하고, 만든 학급은 코드+PIN으로 어느 컴퓨터에서든 불러올 수 있어요.</p>
+    <p class="hint" style="margin-top:0.9rem">학생 화면은 로그인이 필요 없어요 — 학급 코드와 출석번호로 들어옵니다.</p>
+    <p class="hint" style="margin-top:0.5rem">예전에 만들어 둔 학급은 로그인 후 <strong>코드로 학급 불러오기</strong>에 코드+PIN을 넣으면 내 계정에 연결돼요.</p>
   </div>
 </div>
 
@@ -49,7 +45,8 @@
   <a class="logo" href="index.html">KNN 알고리즘 교실</a>
   <span class="badge">🧑‍🏫 교사 대시보드</span>
   <span class="spacer"></span>
-  <button class="btn ghost small" id="dash-lock-btn" style="display:none">🔒 잠그기</button>
+  <span class="hint" id="who-email"></span>
+  <button class="btn ghost small" id="logout-btn" style="display:none">로그아웃</button>
 </div>
 
 <div class="layout" id="dash-main" style="display:none">

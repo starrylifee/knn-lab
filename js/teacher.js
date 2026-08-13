@@ -3,16 +3,27 @@
 function $(sel, root) { return (root || document).querySelector(sel); }
 function $all(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
-const LS_KEY = "knn_teacher_classes";
+/* 로그인한 교사(구글 계정)와 서버에서 불러온 내 학급 목록 */
+let ME = null;
+let classList = [];
+
 const DEMO_CLASSES = [
   { code: "DEMO4", name: "참관용 4학년 데모반", grade: 4 },
   { code: "DEMO6", name: "참관용 6학년 데모반", grade: 6 },
 ];
-function myClasses() {
-  if (window.DEMO_ON) return DEMO_CLASSES;
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { return []; }
+function myClasses() { return window.DEMO_ON ? DEMO_CLASSES : classList; }
+
+async function refreshMyClasses() {
+  if (window.DEMO_ON || !ME) return;
+  const snap = await fbDb.collection("classes").where("ownerUid", "==", ME.uid).get();
+  classList = [];
+  snap.forEach((d) => {
+    const x = d.data();
+    classList.push({ code: d.id, name: x.name, grade: x.grade, ts: x.createdAt ? x.createdAt.seconds : 0 });
+  });
+  classList.sort((a, b) => b.ts - a.ts);
+  renderClassList();
 }
-function saveClasses(list) { if (!window.DEMO_ON) localStorage.setItem(LS_KEY, JSON.stringify(list)); }
 
 let current = null; // {code, data}
 
@@ -34,7 +45,7 @@ function todayStr() {
 function renderClassList() {
   const box = $("#class-list");
   const list = myClasses();
-  if (!list.length) { box.innerHTML = `<p class="hint">아직 학급이 없어요. 아래에서 만들어 보세요.</p>`; return; }
+  if (!list.length) { box.innerHTML = `<p class="hint">아직 학급이 없어요. 아래에서 만들거나, 예전 학급은 코드+PIN으로 불러와 내 계정에 연결하세요.</p>`; return; }
   box.innerHTML = "";
   list.forEach((c) => {
     const el = document.createElement("div");
@@ -66,16 +77,13 @@ async function createClass() {
     while ((await classRef(code).get()).exists) code = genCode();
     const pinHash = await hashPin(code, pin);
     await classRef(code).set({
-      grade, name, pinHash,
+      grade, name, pinHash, ownerUid: ME.uid,
       settings: { aiComment: true, aiCompare: true, aiChat: true },
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
-    const list = myClasses();
-    list.push({ code, name, grade });
-    saveClasses(list);
     $("#new-name").value = ""; $("#new-pin").value = "";
     msg.textContent = `완료! 학급 코드: ${code}`;
-    renderClassList();
+    await refreshMyClasses();
     openClass(code);
   } catch (e) { msg.textContent = "실패: " + (e.message || e); }
 }
@@ -93,10 +101,16 @@ async function loadByCode() {
     if (pin == null) return;
     const ok = d.pinHash ? (await hashPin(code, pin.trim())) === d.pinHash : false;
     if (!ok) { msg.textContent = "PIN이 일치하지 않아요."; return; }
-    const list = myClasses();
-    if (!list.some((c) => c.code === code)) { list.push({ code, name: d.name, grade: d.grade }); saveClasses(list); }
-    msg.textContent = "";
-    renderClassList();
+    if (!d.ownerUid) {
+      // 구글 로그인 도입 전에 만든 학급 → 내 계정에 연결(1회 이관)
+      await classRef(code).set({ ownerUid: ME.uid }, { merge: true });
+      msg.textContent = "이 학급을 내 구글 계정에 연결했어요. 이제 어느 컴퓨터에서든 보여요.";
+      await refreshMyClasses();
+    } else if (d.ownerUid !== ME.uid) {
+      msg.textContent = "다른 구글 계정에 연결된 학급이라 열람만 돼요. 설정 변경은 그 계정으로 로그인하세요.";
+    } else {
+      msg.textContent = "";
+    }
     openClass(code);
   } catch (e) { msg.textContent = "불러오기 실패: " + (e.message || e); }
 }
@@ -350,68 +364,57 @@ function showCodeOverlay() {
   document.body.appendChild(ov);
 }
 
-/* ---------- 대시보드 비밀번호 잠금 ---------- */
+/* ---------- 구글 로그인 게이트 ---------- */
 
-const DASH_LOCK_KEY = "knn_dash_lock";
-async function sha256(s) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("knnlab-dash:" + s));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function lockDashboard() {
+function showLogin() {
   $("#dash-main").style.display = "none";
-  $("#detail") && ($("#detail").style.display = "none");
-  $("#dash-lock-btn").style.display = "none";
-  const saved = localStorage.getItem(DASH_LOCK_KEY);
-  const setup = !saved;
-  $("#lock-sub").textContent = setup
-    ? "이 기기에서 처음이에요. 대시보드를 지킬 비밀번호를 정하세요."
-    : "선생님 비밀번호를 입력하세요.";
-  $("#lock-label").textContent = setup ? "새 비밀번호" : "비밀번호";
-  $("#lock-confirm-wrap").style.display = setup ? "" : "none";
-  $("#lock-reset").style.display = setup ? "none" : "";
-  $("#lock-err").textContent = "";
-  $("#lock-pass").value = ""; $("#lock-pass2").value = "";
   $("#dash-lock").style.display = "";
-  $("#lock-pass").focus();
+  $("#logout-btn").style.display = "none";
+  $("#who-email").textContent = "";
 }
 
-function unlockDashboard() {
+function showDash() {
   $("#dash-lock").style.display = "none";
   $("#dash-main").style.display = "";
-  $("#dash-lock-btn").style.display = "";
-}
-
-async function submitLock() {
-  const saved = localStorage.getItem(DASH_LOCK_KEY);
-  const pass = $("#lock-pass").value.trim();
-  const err = $("#lock-err");
-  err.textContent = "";
-  if (!saved) {
-    if (pass.length < 4) { err.textContent = "4자 이상으로 정해 주세요."; return; }
-    if (pass !== $("#lock-pass2").value.trim()) { err.textContent = "두 비밀번호가 서로 달라요."; return; }
-    localStorage.setItem(DASH_LOCK_KEY, await sha256(pass));
-    unlockDashboard();
-  } else {
-    if ((await sha256(pass)) === saved) { unlockDashboard(); }
-    else { err.textContent = "비밀번호가 맞지 않아요."; $("#lock-pass").select(); }
+  if (!window.DEMO_ON && ME) {
+    $("#logout-btn").style.display = "";
+    $("#who-email").textContent = ME.email || "";
   }
 }
 
-$("#lock-btn").addEventListener("click", submitLock);
-$("#lock-pass").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") { if ($("#lock-confirm-wrap").style.display === "none") submitLock(); else $("#lock-pass2").focus(); }
-});
-$("#lock-pass2").addEventListener("keydown", (e) => { if (e.key === "Enter") submitLock(); });
-$("#lock-forget").addEventListener("click", (e) => {
-  e.preventDefault();
-  if (confirm("이 기기의 대시보드 비밀번호와 '내 학급' 목록을 지울까요?\n학급 데이터는 남아 있고, 코드+PIN으로 다시 불러올 수 있어요.")) {
-    localStorage.removeItem(DASH_LOCK_KEY);
-    localStorage.removeItem(LS_KEY);
-    location.reload();
-  }
-});
-$("#dash-lock-btn").addEventListener("click", lockDashboard);
+if (!window.DEMO_ON) {
+  $("#google-login-btn").addEventListener("click", async () => {
+    const err = $("#lock-err");
+    err.textContent = "";
+    try {
+      await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    } catch (e) {
+      if (e && (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request")) return;
+      err.textContent = "로그인에 실패했어요. 팝업 차단을 풀고 다시 시도해 주세요. (" + ((e && e.code) || e) + ")";
+    }
+  });
+
+  $("#logout-btn").addEventListener("click", async () => {
+    if (!confirm("로그아웃할까요?")) return;
+    current = null;
+    $("#detail").style.display = "none";
+    $("#detail-empty").style.display = "";
+    await fbAuth.signOut();
+  });
+
+  fbAuth.onAuthStateChanged(async (user) => {
+    if (user && !user.isAnonymous) {
+      ME = user;
+      showDash();
+      try { await refreshMyClasses(); }
+      catch (e) { $("#class-list").innerHTML = `<p class="hint">학급 목록을 불러오지 못했어요. 새로고침해 주세요.</p>`; }
+    } else {
+      ME = null;
+      classList = [];
+      showLogin();
+    }
+  });
+}
 
 /* ---------- 시작 ---------- */
 
@@ -425,9 +428,8 @@ $("#d-code").title = "클릭하면 크게 보여요";
 renderClassList();
 
 if (window.DEMO_ON) {
-  // 데모: 비밀번호 없이 열고, 학급 만들기·불러오기는 숨긴다 (가상 학급 2개 고정)
-  unlockDashboard();
-  $("#dash-lock-btn").style.display = "none";
+  // 데모: 로그인 없이 열고, 학급 만들기·불러오기는 숨긴다 (가상 학급 2개 고정)
+  showDash();
   const side = $("#class-list").parentElement;
   let hide = false;
   Array.from(side.children).forEach((el) => {
@@ -435,6 +437,4 @@ if (window.DEMO_ON) {
     if (hide) el.style.display = "none";
   });
   openClass("DEMO4");
-} else {
-  lockDashboard();
 }

@@ -17,10 +17,11 @@ const fbDb = firebase.firestore();
  * authReady는 uid가 준비되면 resolve. 모든 DB 접근 전에 await 한다. */
 let _myUid = null;
 const authReady = new Promise((resolve, reject) => {
+  let kicked = false; // 익명 로그인은 최초 1회만 시도 (교사 구글 로그아웃 직후 재생성 방지)
   fbAuth.onAuthStateChanged((user) => {
     if (user) { _myUid = user.uid; resolve(user.uid); }
+    else if (!kicked) { kicked = true; fbAuth.signInAnonymously().catch((e) => reject(e)); }
   });
-  fbAuth.signInAnonymously().catch((e) => reject(e));
 });
 function myUid() { return _myUid; }
 

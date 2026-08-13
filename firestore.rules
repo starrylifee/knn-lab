@@ -15,20 +15,35 @@ service cloud.firestore {
       return d.num is int && d.num >= 1 && d.num <= 40;
     }
 
+    // 구글 계정으로 로그인한 교사만 (학생은 익명 로그인)
+    function isTeacher() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
     match /classes/{code} {
       allow get: if signedIn();
-      allow list: if false;
+      // 교사는 자기 학급만 목록 조회 가능 (where ownerUid == 내 uid 쿼리만 통과)
+      allow list: if isTeacher() && resource.data.ownerUid == request.auth.uid;
 
-      allow create: if signedIn()
-        && request.resource.data.keys().hasAll(['grade', 'name', 'pinHash'])
+      allow create: if isTeacher()
+        && request.resource.data.keys().hasAll(['grade', 'name', 'pinHash', 'ownerUid'])
+        && request.resource.data.ownerUid == request.auth.uid
         && !('pin' in request.resource.data);
 
       // settings 토글 등만 허용. 학년·이름·PIN·생성일은 잠금.
+      // 소유자만 수정 가능. 소유자 없는 옛 학급은 교사가 1회 연결(claim) 가능.
       allow update: if signedIn()
         && request.resource.data.grade == resource.data.grade
         && request.resource.data.name == resource.data.name
         && request.resource.data.pinHash == resource.data.pinHash
-        && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+        && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt)
+        && (
+          (resource.data.get('ownerUid', null) == request.auth.uid
+            && request.resource.data.ownerUid == request.auth.uid)
+          || (resource.data.get('ownerUid', null) == null
+            && isTeacher()
+            && request.resource.data.ownerUid == request.auth.uid)
+        );
 
       allow delete: if false;
 
