@@ -16,7 +16,7 @@
   <h1>KNN 알고리즘 교실</h1>
   <p class="sub">AI는 어떻게 <strong>비슷한 것</strong>을 찾을까? — 가까운 이웃에게 물어봅니다.</p>
 
-  <div class="entry-grid" style="grid-template-columns:repeat(2,1fr); max-width:720px">
+  <div class="entry-grid">
     <a class="entry-card" href="g4.html">
       <span class="big">🌤️</span>
       <h2>4학년 · 감정일기</h2>
@@ -27,18 +27,35 @@
       <h2>6학년 · 친구 추천</h2>
       <p>나와 비슷한 친구를 찾아주는 추천 알고리즘을 직접 만들어요 (4차시)</p>
     </a>
+    <a class="entry-card" href="teacher.html">
+      <span class="big">🧑‍🏫</span>
+      <h2>교사 로그인</h2>
+      <p>구글 로그인으로 학급을 만들고 우리 반 진행 상황을 봐요 (선생님 전용)</p>
+    </a>
   </div>
 
-  <p class="hint" style="margin-top:1.5rem">학급 코드는 선생님이 알려줘요 · 이름 대신 출석번호만 사용해요</p>
-  <p class="hint" style="margin-top:0.3rem; opacity:0.7">선생님용 대시보드는 <strong>knn-lab.vercel.app/teacher.html</strong> (즐겨찾기 해 두세요)</p>
+  <p class="hint" style="margin-top:1.2rem">학급 코드는 선생님이 알려줘요 · 이름 대신 출석번호만 사용해요</p>
 
-  <div style="margin-top:2rem; padding:0.9rem 1.4rem; border:1.5px dashed #cbd5e1; border-radius:14px; max-width:720px">
-    <p style="margin:0; font-weight:700">🔍 참관·연수용 둘러보기 <span class="hint" style="font-weight:400">(가상 데이터 데모 — 실제 학급과 무관, 저장 안 됨)</span></p>
-    <p style="margin:0.5rem 0 0">
-      <a href="g4.html?demo=1" style="font-weight:700; color:#4f46e5">4학년 학생 화면</a> ·
-      <a href="g6.html?demo=1" style="font-weight:700; color:#4f46e5">6학년 학생 화면</a> ·
-      <a href="teacher.html?demo=1" style="font-weight:700; color:#4f46e5">교사 대시보드</a>
-    </p>
+  <div class="demo-box">
+    <div class="demo-head">
+      <span class="demo-badge">참관 · 연수용</span>
+      <strong>둘러보기 데모</strong>
+      <span class="hint">가상 학급 데이터로 수업이 어떻게 돌아가는지 그대로 볼 수 있어요 — 실제 학급과 무관하고, 저장되지 않아요.</span>
+    </div>
+    <div class="demo-links">
+      <a href="g4.html?demo=1">
+        <span>🌤️</span>
+        <div><b>4학년 학생 화면</b><small>감정일기 6차시를 학생처럼 체험</small></div>
+      </a>
+      <a href="g6.html?demo=1">
+        <span>🧭</span>
+        <div><b>6학년 학생 화면</b><small>친구 추천 알고리즘 4차시 체험</small></div>
+      </a>
+      <a href="teacher.html?demo=1">
+        <span>📊</span>
+        <div><b>교사 대시보드</b><small>학급 현황·감정 그래프 열람</small></div>
+      </a>
+    </div>
   </div>
 </div>
 </body>
