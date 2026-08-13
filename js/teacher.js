@@ -343,6 +343,69 @@ function showCodeOverlay() {
   document.body.appendChild(ov);
 }
 
+/* ---------- 대시보드 비밀번호 잠금 ---------- */
+
+const DASH_LOCK_KEY = "knn_dash_lock";
+async function sha256(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("knnlab-dash:" + s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function lockDashboard() {
+  $("#dash-main").style.display = "none";
+  $("#detail") && ($("#detail").style.display = "none");
+  $("#dash-lock-btn").style.display = "none";
+  const saved = localStorage.getItem(DASH_LOCK_KEY);
+  const setup = !saved;
+  $("#lock-sub").textContent = setup
+    ? "이 기기에서 처음이에요. 대시보드를 지킬 비밀번호를 정하세요."
+    : "선생님 비밀번호를 입력하세요.";
+  $("#lock-label").textContent = setup ? "새 비밀번호" : "비밀번호";
+  $("#lock-confirm-wrap").style.display = setup ? "" : "none";
+  $("#lock-reset").style.display = setup ? "none" : "";
+  $("#lock-err").textContent = "";
+  $("#lock-pass").value = ""; $("#lock-pass2").value = "";
+  $("#dash-lock").style.display = "";
+  $("#lock-pass").focus();
+}
+
+function unlockDashboard() {
+  $("#dash-lock").style.display = "none";
+  $("#dash-main").style.display = "";
+  $("#dash-lock-btn").style.display = "";
+}
+
+async function submitLock() {
+  const saved = localStorage.getItem(DASH_LOCK_KEY);
+  const pass = $("#lock-pass").value.trim();
+  const err = $("#lock-err");
+  err.textContent = "";
+  if (!saved) {
+    if (pass.length < 4) { err.textContent = "4자 이상으로 정해 주세요."; return; }
+    if (pass !== $("#lock-pass2").value.trim()) { err.textContent = "두 비밀번호가 서로 달라요."; return; }
+    localStorage.setItem(DASH_LOCK_KEY, await sha256(pass));
+    unlockDashboard();
+  } else {
+    if ((await sha256(pass)) === saved) { unlockDashboard(); }
+    else { err.textContent = "비밀번호가 맞지 않아요."; $("#lock-pass").select(); }
+  }
+}
+
+$("#lock-btn").addEventListener("click", submitLock);
+$("#lock-pass").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { if ($("#lock-confirm-wrap").style.display === "none") submitLock(); else $("#lock-pass2").focus(); }
+});
+$("#lock-pass2").addEventListener("keydown", (e) => { if (e.key === "Enter") submitLock(); });
+$("#lock-forget").addEventListener("click", (e) => {
+  e.preventDefault();
+  if (confirm("이 기기의 대시보드 비밀번호와 '내 학급' 목록을 지울까요?\n학급 데이터는 남아 있고, 코드+PIN으로 다시 불러올 수 있어요.")) {
+    localStorage.removeItem(DASH_LOCK_KEY);
+    localStorage.removeItem(LS_KEY);
+    location.reload();
+  }
+});
+$("#dash-lock-btn").addEventListener("click", lockDashboard);
+
 /* ---------- 시작 ---------- */
 
 $("#create-btn").addEventListener("click", createClass);
@@ -353,3 +416,4 @@ $("#d-code").addEventListener("click", showCodeOverlay);
 $("#d-code").style.cursor = "pointer";
 $("#d-code").title = "클릭하면 크게 보여요";
 renderClassList();
+lockDashboard();

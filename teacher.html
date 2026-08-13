@@ -26,13 +26,31 @@
 </style>
 </head>
 <body>
+<!-- 대시보드 비밀번호 잠금 (선생님 본인 확인) -->
+<div id="dash-lock" class="landing" style="display:none">
+  <h1>🔒 교사 대시보드</h1>
+  <p class="sub" id="lock-sub">선생님 비밀번호를 입력하세요.</p>
+  <div class="panel-card" style="border-radius:18px; width:min(430px, 92vw)">
+    <div class="field"><label id="lock-label">비밀번호</label>
+      <input id="lock-pass" type="password" placeholder="4자리 이상 숫자·글자" autocomplete="off"></div>
+    <div class="field" id="lock-confirm-wrap" style="display:none"><label>비밀번호 확인</label>
+      <input id="lock-pass2" type="password" placeholder="한 번 더 입력" autocomplete="off"></div>
+    <button class="btn" id="lock-btn" style="width:100%">들어가기</button>
+    <p id="lock-err" style="color:var(--bad); font-weight:700; margin-top:0.6rem"></p>
+    <p class="hint" id="lock-reset" style="margin-top:0.8rem; display:none">
+      비밀번호를 잊으셨나요? <a href="#" id="lock-forget" style="color:var(--brand-deep); font-weight:700">이 기기에서 초기화</a>
+      <span style="display:block">(내 학급 목록만 지워져요. 학급 데이터는 코드+PIN으로 다시 불러올 수 있어요.)</span></p>
+  </div>
+</div>
+
 <div class="topbar">
   <a class="logo" href="index.html">KNN 알고리즘 교실</a>
   <span class="badge">🧑‍🏫 교사 대시보드</span>
   <span class="spacer"></span>
+  <button class="btn ghost small" id="dash-lock-btn" style="display:none">🔒 잠그기</button>
 </div>
 
-<div class="layout">
+<div class="layout" id="dash-main" style="display:none">
   <!-- 왼쪽: 학급 관리 -->
   <div>
     <div class="side-card">
@@ -49,8 +67,8 @@
       <hr style="border:none; border-top:1px solid var(--line); margin:1rem 0">
       <h3 style="margin-top:0">코드로 학급 불러오기</h3>
       <div style="display:flex; gap:0.5rem">
-        <input id="load-code" placeholder="학급 코드" style="flex:1; border:1.5px solid var(--line); border-radius:10px; padding:0.5rem 0.7rem">
-        <button class="btn small" id="load-btn">불러오기</button>
+        <input id="load-code" placeholder="학급 코드" style="flex:1; min-width:0; border:1.5px solid var(--line); border-radius:10px; padding:0.5rem 0.7rem">
+        <button class="btn small" id="load-btn" style="flex:none">불러오기</button>
       </div>
       <p class="hint" id="load-msg" style="margin-top:0.4rem"></p>
     </div>
