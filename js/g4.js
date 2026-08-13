@@ -115,13 +115,13 @@ function initTab1() {
 
   $("#card-save-btn").addEventListener("click", async () => {
     try {
-      await subCol(Join.code, "cards").doc(String(Join.num)).set({
+      await ownedSet(subCol(Join.code, "cards").doc(String(Join.num)), {
         num: Number(Join.num), picks: Array.from(myPicks),
-        ts: firebase.firestore.FieldValue.serverTimestamp(),
       });
       $("#card-save-msg").textContent = "저장 완료! 친구들이 저장하면 우리 반 순위도 나와요.";
+      markTabDone("t1");
       loadClassCards();
-    } catch (e) { $("#card-save-msg").textContent = "저장 실패: " + e.message; }
+    } catch (e) { $("#card-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
 
@@ -159,7 +159,7 @@ function initTab2() {
 
   $("#daily-calc-btn").addEventListener("click", () => {
     const ans = getDailyAnswers();
-    if (!ans) { alert("아직 답하지 않은 문항이 있어요!"); return; }
+    if (!ans) { alert(likertMissingMsg("daily-survey")); return; }
     myToday = scoresFrom(ans);
     myToday.answers = ans;
     $("#daily-bars").innerHTML =
@@ -174,13 +174,14 @@ function initTab2() {
     if (!myToday) return;
     try {
       const st = classifyState([myToday.v, myToday.f, myToday.r], null, 3).label;
-      await subCol(Join.code, "entries").doc(`${Join.num}_${todayStr()}`).set({
+      await ownedSet(subCol(Join.code, "entries").doc(`${Join.num}_${todayStr()}`), {
         num: Number(Join.num), date: todayStr(), answers: myToday.answers,
         v: myToday.v, f: myToday.f, r: myToday.r, state: st,
-        ts: firebase.firestore.FieldValue.serverTimestamp(),
       });
       $("#daily-save-msg").textContent = "저장 완료! (오늘 다시 저장하면 새 기록으로 바뀌어요)";
-    } catch (e) { $("#daily-save-msg").textContent = "저장 실패: " + e.message; }
+      markTabDone("t2");
+      showNextBtn("daily-result", "t2");
+    } catch (e) { $("#daily-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
 
@@ -258,16 +259,18 @@ function drawKnn() {
 
 function updateKnnPanel(nb, k) {
   const all = nearest([myPoint.v, myPoint.f], VIRTUAL, 5, (d) => [d.v, d.f]);
-  let html = `<table class="data"><tr><th>이웃</th><th>활력차</th><th>집중차</th><th>거리</th><th>상태</th></tr>`;
+  // 4학년은 √·음수를 안 배웠으므로 '차이(크기)'와 '거리(가까움 순위)'만 보여준다.
+  let html = `<table class="data"><tr><th>친구</th><th>활력 차이</th><th>집중 차이</th><th>거리<br>(작을수록 가까움)</th><th>순위</th><th>상태</th></tr>`;
   all.forEach((n, i) => {
-    const dv = Math.round((n.item.v - myPoint.v) * 10) / 10;
-    const df = Math.round((n.item.f - myPoint.f) * 10) / 10;
+    const dv = Math.abs(Math.round((n.item.v - myPoint.v) * 10) / 10);
+    const df = Math.abs(Math.round((n.item.f - myPoint.f) * 10) / 10);
     const st = STATES[n.item.s];
     html += `<tr class="${i < k ? "hl" : ""}"><td>${n.item.name}</td><td>${dv}</td><td>${df}</td>
-      <td>√(${(dv * dv).toFixed(2)}+${(df * df).toFixed(2)}) = <strong>${n.dist.toFixed(2)}</strong></td>
-      <td>${st.emoji}</td></tr>`;
+      <td><strong>${n.dist.toFixed(2)}</strong></td><td>${i + 1}위</td><td>${st.emoji}</td></tr>`;
   });
-  html += `</table><p class="hint">초록 줄 = 지금 뽑힌 K명의 이웃</p>`;
+  html += `</table><p class="hint">초록 줄 = 지금 뽑힌 가까운 이웃 ${k}명 · 거리는 두 점 사이를 자로 잰 길이예요(작을수록 비슷).</p>
+    <details style="margin-top:0.4rem"><summary class="hint" style="cursor:pointer">🔎 거리는 어떻게 재나요? (더 알아보기)</summary>
+    <p class="hint">두 점의 가로 차이와 세로 차이로 '대각선 길이'를 재요. 활력 차이와 집중 차이가 둘 다 작을수록 거리가 가까워요.</p></details>`;
   $("#knn-table").innerHTML = html;
 
   const res = knnClassify([myPoint.v, myPoint.f], VIRTUAL, k, (d) => [d.v, d.f], (d) => d.s);
@@ -285,7 +288,7 @@ function initTab3() {
     const py = (e.clientY - rect.top) * (canvas.height / rect.height);
     const [v, f] = fromPx(canvas, px, py);
     myPoint = { v, f };
-    $("#knn-mypos").textContent = `내 위치: 활력 ${v}, 집중 ${f}`;
+    $("#knn-mypos").textContent = `내 위치: 활력 ${v}, 집중 ${f}  (다른 곳을 누르면 옮길 수 있어요)`;
     drawKnn();
   });
   $("#knn-k").addEventListener("input", () => {
@@ -296,7 +299,7 @@ function initTab3() {
     if (e.detail === "t3") {
       if (!myPoint && myToday) {
         myPoint = { v: myToday.v, f: myToday.f };
-        $("#knn-mypos").textContent = `내 위치(2차시 지표): 활력 ${myToday.v}, 집중 ${myToday.f}`;
+        $("#knn-mypos").textContent = `내 위치(2차시 점수): 활력 ${myToday.v}, 집중 ${myToday.f}  (다른 곳을 누르면 옮길 수 있어요)`;
       }
       drawKnn();
     }
@@ -312,19 +315,25 @@ async function loadScatter() {
 
   const snap = await subCol(Join.code, "entries").get();
   const rows = [];
-  snap.forEach((d) => rows.push(d.data()));
-  $("#scatter-info").textContent = ` 기록 ${rows.length}개 (이름 없이 번호만 보여요)`;
+  snap.forEach((d) => { const x = d.data(); if (x.date === todayStr()) rows.push(x); });
+  $("#scatter-info").textContent = ` 오늘 기록 ${rows.length}개 (누가 누구인지 번호는 숨겨요 — 모양만 봐요)`;
+
+  if (!rows.length) {
+    ctx.fillStyle = "#94a3b8"; ctx.font = "bold 17px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("아직 저장된 기록이 없어요.", canvas.width / 2, canvas.height / 2 - 12);
+    ctx.fillText("2차시에서 '오늘 기록 저장하기'를 누르면", canvas.width / 2, canvas.height / 2 + 14);
+    ctx.fillText("여기에 점이 생겨요!", canvas.width / 2, canvas.height / 2 + 40);
+    ctx.textAlign = "left";
+  }
 
   const counts = { green: 0, yellow: 0, blue: 0 };
   rows.forEach((e) => {
     const st = e.state || classifyState([e.v, e.f, e.r], null, 3).label;
     counts[st] = (counts[st] || 0) + 1;
     const [x, y] = toPx(canvas, e.v, e.f);
+    // 학생 화면에는 번호를 표시하지 않는다(감정 노출 방지). 번호별 확인은 교사 대시보드에서.
     ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.fillStyle = STATES[st].color + "cc"; ctx.fill();
-    ctx.fillStyle = "#fff"; ctx.font = "bold 11px sans-serif";
-    const t = String(e.num);
-    ctx.fillText(t, x - (t.length > 1 ? 7 : 3.5), y + 4);
   });
 
   const total = Math.max(1, rows.length);
@@ -346,7 +355,7 @@ function initTab4() {
 
 /* ---------- 5차시: 웹앱 기획 ---------- */
 
-const PLAN_FEATURES = ["기분 설문", "상태 카드 결과", "그래프 보기", "AI 한마디", "비밀 지키기(익명)", "기록 모아 보기"];
+const PLAN_FEATURES = ["기분 설문", "상태 카드 결과", "그래프 보기", "AI 한마디", "비밀 지키기(내 이름 안 보이게)", "기록 모아 보기"];
 
 function initTab5() {
   const grid = $("#plan-feats");
@@ -367,13 +376,13 @@ function initTab5() {
       features: feats,
       screen: $("#plan-screen").value.trim(),
       worry: $("#plan-worry").value.trim(),
-      ts: firebase.firestore.FieldValue.serverTimestamp(),
     };
     if (!doc.name) { $("#plan-save-msg").textContent = "앱 이름을 지어 주세요!"; return; }
     try {
-      await subCol(Join.code, "plans").doc(String(Join.num)).set(doc);
+      await ownedSet(subCol(Join.code, "plans").doc(String(Join.num)), doc);
       $("#plan-save-msg").textContent = "제출 완료! 선생님 대시보드로 전달됐어요.";
-    } catch (e) { $("#plan-save-msg").textContent = "제출 실패: " + e.message; }
+      markTabDone("t5");
+    } catch (e) { $("#plan-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
 
@@ -386,45 +395,49 @@ function initTab6() {
 
   $("#app-run-btn").addEventListener("click", async () => {
     const ans = getAppAnswers();
-    if (!ans) { alert("아직 답하지 않은 문항이 있어요!"); return; }
+    if (!ans) { alert(likertMissingMsg("app-survey")); return; }
     const sc = scoresFrom(ans);
 
     // 우리 반 데이터 불러와 KNN (내 오늘 기록은 제외)
     const snap = await subCol(Join.code, "entries").get();
     const pool = [];
+    let hadToday = false;
     snap.forEach((d) => {
       const x = d.data();
-      if (d.id !== `${Join.num}_${todayStr()}`) pool.push({ v: x.v, f: x.f, r: x.r, s: x.state || "yellow" });
+      if (d.id === `${Join.num}_${todayStr()}`) hadToday = true;
+      else pool.push({ v: x.v, f: x.f, r: x.r, s: x.state || "yellow" });
     });
+    // 오늘 이미 저장한 기록이 있으면 덮어쓰기 전에 확인
+    if (hadToday && !confirm("오늘 이미 저장한 기록이 있어요. 이 답으로 새로 저장할까요?")) return;
+
     const res = classifyState([sc.v, sc.f, sc.r], pool, 3);
     const st = STATES[res.label];
     const source = pool.length >= 8 ? `우리 반 기록 ${pool.length}개` : "연습용 데이터 12개";
 
     $("#app-verdict").innerHTML = `활력 ${sc.v} · 집중 ${sc.f} · 관계 ${sc.r}<br>
       <span class="state-card ${st.cls}" style="margin-top:0.4rem">${st.emoji} ${st.name}</span>
-      <div class="hint" style="margin-top:0.3rem">KNN이 ${source}에서 나와 가장 비슷한 3개를 찾아 다수결로 정했어요.</div>`;
+      <div class="hint" style="margin-top:0.3rem">KNN이 ${source}에서 나와 가장 비슷한 친구 3명을 찾아 투표로 정했어요. (오늘 기록으로 저장됐어요)</div>`;
     $("#app-result").style.display = "";
+    markTabDone("t6");
 
     // 오늘 기록으로도 저장
-    subCol(Join.code, "entries").doc(`${Join.num}_${todayStr()}`).set({
+    ownedSet(subCol(Join.code, "entries").doc(`${Join.num}_${todayStr()}`), {
       num: Number(Join.num), date: todayStr(), answers: ans,
       v: sc.v, f: sc.f, r: sc.r, state: res.label,
-      ts: firebase.firestore.FieldValue.serverTimestamp(),
     }).catch(() => {});
 
-    // AI 코멘트 (교사 설정)
-    const aiOn = !CLASS_DATA.settings || CLASS_DATA.settings.aiComment !== false;
+    // AI 코멘트 (교사 설정 — 호출 직전 재확인)
     const cEl = $("#app-comment");
-    if (!aiOn) { cEl.innerHTML = ""; return; }
-    cEl.innerHTML = `<span class="loading">AI가 한마디를 쓰는 중</span>`;
+    if (!(await aiEnabled("aiComment"))) { cEl.innerHTML = ""; return; }
+    cEl.innerHTML = `💬 입력한 내용은 AI 회사(Upstage) 서버로 보내져요. <span class="loading">AI가 한마디를 쓰는 중</span>`;
     try {
       const comment = await askSolar([
         { role: "system", content: "너는 초등학교 4학년 학생의 감정일기에 짧고 따뜻한 한마디를 남기는 도우미야. 2~3문장, 부드러운 해요체로 공감하고 응원해줘. 점수를 평가하거나 훈계하지 말고, 이모지는 1개만. 학생 이름은 모르니 부르지 마." },
-        { role: "user", content: `오늘 나의 지표(5점 만점): 활력 ${sc.v}, 집중 ${sc.f}, 관계 ${sc.r}. 상태 카드: ${st.name}. 나에게 한마디를 남겨줘.` },
+        { role: "user", content: `오늘 나의 점수(5점 만점): 활력 ${sc.v}, 집중 ${sc.f}, 관계 ${sc.r}. 상태 카드: ${st.name}. 나에게 한마디를 남겨줘.` },
       ], 0.7);
-      cEl.innerHTML = `💬 <strong>AI의 한마디</strong><br>${comment}`;
+      cEl.innerHTML = `💬 <strong>AI의 한마디</strong><br>${esc(comment)}`;
     } catch (e) {
-      cEl.innerHTML = `<span class="hint">AI 한마디를 불러오지 못했어요. (${e.message})</span>`;
+      cEl.innerHTML = `<span class="hint">지금은 AI가 바빠요. 잠시 뒤 분석하기를 다시 눌러 보세요.</span>`;
     }
   });
 
@@ -452,12 +465,11 @@ function initTab6() {
     const stars = [0, 1, 2].map((i) => Number($("#stars-" + i).dataset.value || 0));
     if (stars.some((s) => !s)) { $("#review-save-msg").textContent = "별점 세 개를 모두 매겨 주세요!"; return; }
     try {
-      await subCol(Join.code, "reviews").doc(String(Join.num)).set({
+      await ownedSet(subCol(Join.code, "reviews").doc(String(Join.num)), {
         num: Number(Join.num), stars, text: $("#review-text").value.trim(),
-        ts: firebase.firestore.FieldValue.serverTimestamp(),
       });
       $("#review-save-msg").textContent = "검토 의견 전송 완료! 개발자(선생님)가 확인할 거예요.";
-    } catch (e) { $("#review-save-msg").textContent = "전송 실패: " + e.message; }
+    } catch (e) { $("#review-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
 

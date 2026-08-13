@@ -1,13 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 학급 코드 기반 수업용 앱 — 로그인 없이 코드로 참여 (개인정보는 출석번호만 저장)
+
+    // 로그인(익명 인증)을 거친 요청만 허용. 인터넷 무단 접근 차단.
+    function signedIn() { return request.auth != null; }
+
     match /classes/{code} {
-      allow read, create, update: if true;
+      // 학생 입장에 필요한 학급 정보 읽기는 허용. 단, 전체 목록(list) 조회는 금지.
+      allow get: if signedIn();
+      allow list: if false;
+
+      // 학급 생성: 로그인 상태 + 필수 필드(해시된 PIN 포함) + 평문 PIN 금지.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['grade', 'name', 'pinHash'])
+        && !('pin' in request.resource.data);
+
+      // 학급 문서 수정: settings 토글 등만 허용. 학년·이름·PIN·생성일은 잠금(변조 차단).
+      allow update: if signedIn()
+        && request.resource.data.grade == resource.data.grade
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.pinHash == resource.data.pinHash
+        && (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+
+      // 학급 문서 삭제는 클라이언트에서 불가(사고·장난 방지). 재사용은 새 코드로.
       allow delete: if false;
 
+      // 학생 제출물(취향·감정·기획 등). 문서 id는 출석번호.
       match /{sub}/{doc} {
-        allow read, create, update, delete: if true;
+        allow read: if signedIn();
+
+        // 최초 저장: 본인 기기(uid)를 owner로 도장.
+        allow create: if signedIn()
+          && request.resource.data.owner == request.auth.uid;
+
+        // 수정: 최초 저장한 본인만. 남의 번호 문서 덮어쓰기 차단.
+        allow update: if signedIn()
+          && resource.data.owner == request.auth.uid
+          && request.resource.data.owner == request.auth.uid;
+
+        // 삭제: 본인이 쓴 문서만 스스로 지울 수 있음(다른 학생·외부인 차단).
+        allow delete: if signedIn()
+          && resource.data.owner == request.auth.uid;
       }
     }
   }

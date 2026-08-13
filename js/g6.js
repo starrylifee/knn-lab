@@ -148,14 +148,17 @@ function initTab2() {
     };
     if (!favs.snack || !favs.video || !favs.book) { msg.textContent = "최애 세 가지를 모두 적어 주세요!"; return; }
     if (!myTopic) { msg.textContent = "모둠 주제를 골라 주세요!"; return; }
+    if (favs.snack.length > 30 || favs.video.length > 30 || favs.book.length > 30) {
+      msg.textContent = "최애는 30자 안으로 짧게 적어 주세요!"; return;
+    }
     try {
-      await subCol(Join.code, "prefs").doc(String(Join.num)).set({
+      await ownedSet(subCol(Join.code, "prefs").doc(String(Join.num)), {
         num: Number(Join.num), vec, favs, topic: myTopic,
-        ts: firebase.firestore.FieldValue.serverTimestamp(),
       });
       msg.textContent = "저장 완료! 데이터 창고에 쌓였어요.";
+      markTabDone("t2");
       loadPrefStatus();
-    } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+    } catch (e) { msg.textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 
   loadPrefStatus();
@@ -200,12 +203,11 @@ function initTab3() {
     const note = $("#compare-note").value.trim();
     if (!note) { $("#compare-save-msg").textContent = "비교한 내용을 적어 주세요!"; return; }
     try {
-      await subCol(Join.code, "compare").doc(String(Join.num)).set({
+      await ownedSet(subCol(Join.code, "compare").doc(String(Join.num)), {
         num: Number(Join.num), note,
-        ts: firebase.firestore.FieldValue.serverTimestamp(),
       });
       $("#compare-save-msg").textContent = "제출 완료!";
-    } catch (e) { $("#compare-save-msg").textContent = "제출 실패: " + e.message; }
+    } catch (e) { $("#compare-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
 
@@ -235,8 +237,9 @@ async function runMyAlgorithm() {
     <table class="data"><tr><th>친구</th><th>거리(작을수록 비슷)</th><th>그 친구의 최애</th></tr>`;
   nb.forEach((n) => {
     const f = n.item.favs || {};
+    // 사용자가 입력한 최애 텍스트는 반드시 esc() 처리 (저장형 XSS 방지)
     html += `<tr><td><strong>${n.item.num}번</strong></td><td>${n.dist.toFixed(2)}</td>
-      <td style="text-align:left">🍪 ${f.snack || "-"} · 📺 ${f.video || "-"} · 📚 ${f.book || "-"}</td></tr>`;
+      <td style="text-align:left">🍪 ${esc(f.snack) || "-"} · 📺 ${esc(f.video) || "-"} · 📚 ${esc(f.book) || "-"}</td></tr>`;
   });
   const recs = [];
   nb.forEach((n) => {
@@ -245,36 +248,37 @@ async function runMyAlgorithm() {
   });
   html += `</table>
     <h3>→ 내 알고리즘의 추천 목록</h3>
-    <p style="font-size:1.1rem"><strong>${recs.slice(0, 6).join(", ")}</strong></p>
+    <p style="font-size:1.1rem"><strong>${recs.slice(0, 6).map(esc).join(", ")}</strong></p>
     <p class="hint">규칙: 가중치 거리로 가까운 ${k}명을 찾고, 그 친구들의 최애를 추천 (KNN)</p></div>`;
   box.innerHTML = html;
+  markTabDone("t3");
 
   lastMyRec = { k, neighbors: nb.map((n) => ({ num: n.item.num, dist: Math.round(n.dist * 100) / 100 })), recs: recs.slice(0, 6), me, others };
   $("#ai-rec-btn").disabled = false;
 }
 
 async function runAiRecommend() {
-  const aiOn = !CLASS_DATA.settings || CLASS_DATA.settings.aiCompare !== false;
   const box = $("#ai-rec-result");
-  if (!aiOn) { box.innerHTML = `<div class="notice">선생님이 지금은 AI 비교 기능을 꺼 두었어요.</div>`; return; }
+  if (!(await aiEnabled("aiCompare"))) { box.innerHTML = `<div class="notice">선생님이 지금은 AI 비교 기능을 꺼 두었어요.</div>`; return; }
   if (!lastMyRec) return;
-  box.innerHTML = `<p class="loading">AI가 데이터를 분석하는 중</p>`;
+  box.innerHTML = `<p class="hint">우리 반 취향 데이터가 AI(Upstage) 서버로 전송돼요.</p><p class="loading">AI가 데이터를 분석하는 중</p>`;
 
+  // 개인정보 보호: 자유 입력한 최애 텍스트는 AI로 보내지 않고 번호·점수만 전송한다.
   const { me, others } = lastMyRec;
   const lines = others.map((p) =>
-    `${p.num}번: 취향[${PREF_LABELS.map((l, i) => `${l}${p.vec[i]}`).join(",")}], 최애(${p.favs.snack}/${p.favs.video}/${p.favs.book})`).join("\n");
+    `${p.num}번: 취향[${PREF_LABELS.map((l, i) => `${l}${p.vec[i]}`).join(",")}]`).join("\n");
 
   try {
     const answer = await askSolar([
-      { role: "system", content: "너는 초등학교 6학년 교실의 추천 알고리즘 도우미야. 학생 취향 데이터(1~5점)를 보고 질문한 학생과 비슷한 친구 2~3명(번호로만)과 추천 항목 3~4개를 골라줘. 반드시 '비슷한 친구: ...', '추천: ...', '이유: ...' 세 줄 형식으로, 쉬운 해요체로 짧게 답해. 학생 이름은 절대 쓰지 마." },
-      { role: "user", content: `나(${me.num}번)의 취향: [${PREF_LABELS.map((l, i) => `${l}${me.vec[i]}`).join(",")}]\n\n우리 반 친구들 데이터:\n${lines}\n\n나와 비슷한 친구와 추천 항목을 골라줘.` },
+      { role: "system", content: "너는 초등학교 6학년 교실의 추천 알고리즘 도우미야. 학생 취향 점수(1~5점)를 보고 질문한 학생과 비슷한 친구 2~3명(번호로만)을 골라줘. 반드시 '비슷한 친구: ...', '이유: ...' 두 줄 형식으로, 쉬운 해요체로 짧게 답해. 학생 이름은 절대 쓰지 마." },
+      { role: "user", content: `나(${me.num}번)의 취향: [${PREF_LABELS.map((l, i) => `${l}${me.vec[i]}`).join(",")}]\n\n우리 반 친구들 데이터:\n${lines}\n\n나와 비슷한 친구를 골라줘.` },
     ], 0.3);
     box.innerHTML = `<div class="result-box" style="border-color:var(--accent); background:#f0f9ff">
       <h3 style="margin-top:0">🤖 AI(Solar)의 추천</h3>
-      <div style="white-space:pre-wrap">${answer}</div></div>
+      <div style="white-space:pre-wrap">${esc(answer)}</div></div>
       <p class="hint" style="margin-top:0.5rem">내 알고리즘 결과와 비교해서 같은 점·다른 점을 아래에 기록해 보세요.</p>`;
   } catch (e) {
-    box.innerHTML = `<div class="notice">AI 추천을 불러오지 못했어요: ${e.message}</div>`;
+    box.innerHTML = `<div class="notice">지금은 AI가 바빠요. 잠시 뒤 다시 눌러 주세요.</div>`;
   }
 }
 
@@ -363,23 +367,23 @@ function initTab4() {
   // AI 토론 챗
   let chatHistory = [];
   async function sendChat() {
-    const aiOn = !CLASS_DATA.settings || CLASS_DATA.settings.aiChat !== false;
     const input = $("#chat-input");
     const text = input.value.trim();
     if (!text) return;
+    if (text.length > 300) { alert("질문은 300자 안으로 적어 주세요!"); return; }
     const log = $("#chat-log");
     log.insertAdjacentHTML("beforeend", `<div class="chat-msg me"></div>`);
-    log.lastElementChild.textContent = text;
+    log.lastElementChild.textContent = text; // textContent라 XSS 안전
     input.value = "";
     log.scrollTop = log.scrollHeight;
-    if (!aiOn) {
+    if (!(await aiEnabled("aiChat"))) {
       log.insertAdjacentHTML("beforeend", `<div class="chat-msg ai">지금은 선생님이 AI 토론 기능을 꺼 두었어요. 친구들과 먼저 이야기해 보세요!</div>`);
+      log.scrollTop = log.scrollHeight;
       return;
     }
     log.insertAdjacentHTML("beforeend", `<div class="chat-msg ai loading">생각하는 중</div>`);
     log.scrollTop = log.scrollHeight;
     try {
-      // API는 메시지 최대 6개 — 시스템 + 최근 2쌍 + 새 질문
       const recent = chatHistory.slice(-4);
       const answer = await askSolar([
         { role: "system", content: "너는 초등학교 6학년의 '추천 알고리즘의 편향과 필터버블' 토론 도우미야. 3~4문장, 쉬운 해요체. 정답을 단정하지 말고 학생 생각을 존중하며, 마지막에 생각을 넓히는 되물음 1개를 던져. 토론 주제(추천 알고리즘·AI·편향·필터버블·데이터)와 관련 없는 질문에는 '그건 토론 주제로 돌아가서 이야기해요'라고 부드럽게 안내해." },
@@ -387,11 +391,11 @@ function initTab4() {
         { role: "user", content: text },
       ], 0.6);
       log.lastElementChild.classList.remove("loading");
-      log.lastElementChild.textContent = answer;
+      log.lastElementChild.textContent = answer; // textContent라 XSS 안전
       chatHistory.push({ role: "user", content: text }, { role: "assistant", content: answer });
     } catch (e) {
       log.lastElementChild.classList.remove("loading");
-      log.lastElementChild.textContent = "답을 불러오지 못했어요: " + e.message;
+      log.lastElementChild.textContent = "지금은 AI가 바빠요. 잠시 뒤 다시 물어봐 주세요.";
     }
     log.scrollTop = log.scrollHeight;
   }
@@ -406,13 +410,14 @@ function initTab4() {
       who: $("#idea-who").value.trim(),
       rule: $("#idea-rule").value.trim(),
       guard: $("#idea-guard").value.trim(),
-      ts: firebase.firestore.FieldValue.serverTimestamp(),
     };
     if (!doc.what || !doc.rule) { $("#idea-save-msg").textContent = "무엇을 추천하는지, 어떤 규칙인지 적어 주세요!"; return; }
+    if (!doc.guard) { $("#idea-save-msg").textContent = "4차시에서 배운 '편향 막는 방법'을 하나만 적어 주세요!"; $("#idea-guard").focus(); return; }
     try {
-      await subCol(Join.code, "ideas").doc(String(Join.num)).set(doc);
+      await ownedSet(subCol(Join.code, "ideas").doc(String(Join.num)), doc);
       $("#idea-save-msg").textContent = "제출 완료! 선생님 대시보드로 전달됐어요.";
-    } catch (e) { $("#idea-save-msg").textContent = "제출 실패: " + e.message; }
+      markTabDone("t4");
+    } catch (e) { $("#idea-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
 
