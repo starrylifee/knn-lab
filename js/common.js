@@ -60,7 +60,7 @@ async function ownedSet(ref, data) {
     await ref.set({ ...data, owner: myUid(), ts: firebase.firestore.FieldValue.serverTimestamp() });
   } catch (e) {
     if (/permission|PERMISSION_DENIED/i.test(e.message || "")) {
-      throw new Error("이 번호는 이미 다른 친구(기기)가 사용 중이에요. 내 출석번호가 맞는지 확인해 주세요.");
+      throw new Error("이 번호는 다른 기기에서 먼저 저장돼 여기선 못 바꿔요. 내 번호가 맞다면 선생님을 불러 주세요.");
     }
     throw e;
   }

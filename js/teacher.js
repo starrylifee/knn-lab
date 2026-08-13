@@ -153,7 +153,7 @@ async function getAll(sub) {
 function rosterGrid(submittedNums, max) {
   const set = new Set(submittedNums.map(Number));
   let cells = "";
-  for (let n = 1; n <= (max || 30); n++) {
+  for (let n = 1; n <= (max || 40); n++) {
     const on = set.has(n);
     cells += `<div style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;
       border-radius:8px;font-weight:800;font-size:0.95rem;
@@ -189,7 +189,7 @@ async function renderSection() {
         `<div class="mini-card" style="text-align:center"><div style="font-size:1.8rem; font-weight:800">${rowsBySub[s].length}</div>${names[s]}</div>`).join("")}
       </div>
       <p class="hint" style="margin-top:0.8rem"><strong>${names[primary]}</strong> 제출한 번호 (${submitted.length}명) — 색이 없는 번호가 아직 안 낸 학생</p>
-      ${rosterGrid(submitted, 30)}
+      ${rosterGrid(submitted, 40)}
       <h3>AI 기능 켜고 끄기</h3>
       <p class="hint">끄면 학생이 다음 AI 버튼을 누를 때부터 적용돼요.</p>
       ${toggles.map(([key, label]) => `
@@ -246,7 +246,7 @@ async function renderSection() {
       const r2 = filter ? rows.filter((r) => r.date === filter) : rows;
       const body2 = `<table class="data"><tr><th>번호</th><th>날짜</th><th>활력</th><th>집중</th><th>관계</th><th>상태</th></tr>` + r2
         .sort((a, b) => (a.date === b.date ? a.num - b.num : (a.date < b.date ? 1 : -1)))
-        .map((r) => `<tr><td>${r.num}</td><td>${r.date}</td><td>${r.v}</td><td>${r.f}</td><td>${r.r}</td><td>${STATE_NAMES[r.state] || "-"}</td></tr>`).join("") + `</table>`;
+        .map((r) => `<tr><td>${Number(r.num)||''}</td><td>${r.date}</td><td>${r.v}</td><td>${r.f}</td><td>${r.r}</td><td>${STATE_NAMES[r.state] || "-"}</td></tr>`).join("") + `</table>`;
       $("#entries-table").innerHTML = body2;
     };
     $("#sec-body").innerHTML = dateSel + `<div id="entries-table"></div>`;
@@ -260,28 +260,28 @@ async function renderSection() {
   let html = "";
   if (curSec === "cards") {
     html = `<table class="data"><tr><th>번호</th><th>고른 카드</th></tr>` + rows.map((r) =>
-      `<tr><td>${r.num}</td><td>${(r.picks || []).map((p) => ["🎢", "👻", "🎠", "🚢", "🚗", "🎡", "🍭", "🎁"][p] || "").join(" ")}</td></tr>`).join("") + `</table>`;
+      `<tr><td>${Number(r.num)||''}</td><td>${(r.picks || []).map((p) => ["🎢", "👻", "🎠", "🚢", "🚗", "🎡", "🍭", "🎁"][p] || "").join(" ")}</td></tr>`).join("") + `</table>`;
   } else if (curSec === "plans") {
     html = rows.map((r) => `<div class="mini-card" style="margin-bottom:0.7rem">
-      <strong>${r.num}번 · 「${escH(r.name)}」</strong>
+      <strong>${Number(r.num)||''}번 · 「${escH(r.name)}」</strong>
       <p>👥 ${escH(r.who)}</p>
       <p>🧩 기능: ${(r.features || []).map(escH).join(", ") || "-"}</p>
       <p>🖥 화면: ${escH(r.screen) || "-"}</p>
       <p>⚠️ 걱정·약속: ${escH(r.worry) || "-"}</p></div>`).join("");
   } else if (curSec === "reviews") {
     html = `<table class="data"><tr><th>번호</th><th>쉬움</th><th>정확</th><th>추천</th><th>한 줄 평</th></tr>` + rows.map((r) =>
-      `<tr><td>${r.num}</td>${(r.stars || []).map((s) => `<td>${"★".repeat(s)}</td>`).join("")}<td style="text-align:left">${escH(r.text)}</td></tr>`).join("") + `</table>`;
+      `<tr><td>${Number(r.num)||''}</td>${(r.stars || []).map((s) => `<td>${"★".repeat(s)}</td>`).join("")}<td style="text-align:left">${escH(r.text)}</td></tr>`).join("") + `</table>`;
   } else if (curSec === "prefs") {
     const L = ["매운맛", "단맛", "운동", "게임", "독서", "도전", "함께"];
-    html = `<p class="hint">${rows.length}명 제출</p>` + rosterGrid([...new Set(rows.map((r) => r.num))], 30) +
+    html = `<p class="hint">${rows.length}명 제출</p>` + rosterGrid([...new Set(rows.map((r) => r.num))], 40) +
       `<div style="overflow-x:auto"><table class="data"><tr><th>번호</th>${L.map((l) => `<th>${l}</th>`).join("")}<th>최애 (과자/영상/책)</th><th>모둠 주제</th></tr>` + rows.map((r) =>
-      `<tr><td>${r.num}</td>${(r.vec || []).map((v) => `<td>${v}</td>`).join("")}
+      `<tr><td>${Number(r.num)||''}</td>${(r.vec || []).map((v) => `<td>${v}</td>`).join("")}
        <td style="text-align:left">${escH(r.favs?.snack)} / ${escH(r.favs?.video)} / ${escH(r.favs?.book)}</td><td>${escH(r.topic)}</td></tr>`).join("") + `</table></div>`;
   } else if (curSec === "compare") {
-    html = rows.map((r) => `<div class="mini-card" style="margin-bottom:0.7rem"><strong>${r.num}번</strong><p>${escH(r.note)}</p></div>`).join("");
+    html = rows.map((r) => `<div class="mini-card" style="margin-bottom:0.7rem"><strong>${Number(r.num)||''}번</strong><p>${escH(r.note)}</p></div>`).join("");
   } else if (curSec === "ideas") {
     html = rows.map((r) => `<div class="mini-card" style="margin-bottom:0.7rem">
-      <strong>${r.num}번 · ${escH(r.what)}</strong>
+      <strong>${Number(r.num)||''}번 · ${escH(r.what)}</strong>
       <p>👥 대상: ${escH(r.who) || "-"}</p>
       <p>📏 데이터·규칙: ${escH(r.rule)}</p>
       <p>🛡 편향 방지: ${escH(r.guard) || "-"}</p></div>`).join("");

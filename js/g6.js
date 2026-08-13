@@ -173,7 +173,7 @@ async function loadPrefStatus() {
     nums.sort((a, b) => a - b);
     $("#pref-status").innerHTML = `지금까지 <strong style="font-size:1.3rem">${nums.length}명</strong> 참여
       <div style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-top:0.4rem">
-      ${nums.map((n) => `<span class="step-chip done">${n}번</span>`).join("")}</div>`;
+      ${nums.map((n) => `<span class="step-chip done">${Number(n) || ""}번</span>`).join("")}</div>`;
   } catch (e) {
     $("#pref-status").textContent = "현황을 불러오지 못했어요.";
   }
@@ -238,7 +238,7 @@ async function runMyAlgorithm() {
   nb.forEach((n) => {
     const f = n.item.favs || {};
     // 사용자가 입력한 최애 텍스트는 반드시 esc() 처리 (저장형 XSS 방지)
-    html += `<tr><td><strong>${n.item.num}번</strong></td><td>${n.dist.toFixed(2)}</td>
+    html += `<tr><td><strong>${Number(n.item.num)||''}번</strong></td><td>${n.dist.toFixed(2)}</td>
       <td style="text-align:left">🍪 ${esc(f.snack) || "-"} · 📺 ${esc(f.video) || "-"} · 📚 ${esc(f.book) || "-"}</td></tr>`;
   });
   const recs = [];

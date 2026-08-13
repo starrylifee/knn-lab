@@ -120,6 +120,7 @@ function initTab1() {
       });
       $("#card-save-msg").textContent = "저장 완료! 친구들이 저장하면 우리 반 순위도 나와요.";
       markTabDone("t1");
+      showNextBtn("card-result", "t1");
       loadClassCards();
     } catch (e) { $("#card-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
@@ -135,7 +136,7 @@ async function loadClassCards() {
     .sort((a, b) => b.ov - a.ov)
     .slice(0, 5);
   let html = `<h3>우리 반에서 나와 가까운 이웃</h3><table class="data"><tr><th>친구</th><th>겹친 수</th></tr>`;
-  ranked.forEach((r) => { html += `<tr><td>${r.num}번</td><td>${r.ov}장</td></tr>`; });
+  ranked.forEach((r) => { html += `<tr><td>${Number(r.num)||''}번</td><td>${r.ov}장</td></tr>`; });
   html += `</table>`;
   $("#class-card-ranking").innerHTML = html;
 }
@@ -174,8 +175,9 @@ function initTab2() {
     if (!myToday) return;
     try {
       const st = classifyState([myToday.v, myToday.f, myToday.r], null, 3).label;
+      // 개인정보 최소화: 문항별 원답(answers)은 저장하지 않고 요약 점수만 저장.
       await ownedSet(subCol(Join.code, "entries").doc(`${Join.num}_${todayStr()}`), {
-        num: Number(Join.num), date: todayStr(), answers: myToday.answers,
+        num: Number(Join.num), date: todayStr(),
         v: myToday.v, f: myToday.f, r: myToday.r, state: st,
       });
       $("#daily-save-msg").textContent = "저장 완료! (오늘 다시 저장하면 새 기록으로 바뀌어요)";
@@ -266,7 +268,7 @@ function updateKnnPanel(nb, k) {
     const df = Math.abs(Math.round((n.item.f - myPoint.f) * 10) / 10);
     const st = STATES[n.item.s];
     html += `<tr class="${i < k ? "hl" : ""}"><td>${n.item.name}</td><td>${dv}</td><td>${df}</td>
-      <td><strong>${n.dist.toFixed(2)}</strong></td><td>${i + 1}위</td><td>${st.emoji}</td></tr>`;
+      <td><strong>${n.dist.toFixed(1)}</strong></td><td>${i + 1}위</td><td>${st.emoji}</td></tr>`;
   });
   html += `</table><p class="hint">초록 줄 = 지금 뽑힌 가까운 이웃 ${k}명 · 거리는 두 점 사이를 자로 잰 길이예요(작을수록 비슷).</p>
     <details style="margin-top:0.4rem"><summary class="hint" style="cursor:pointer">🔎 거리는 어떻게 재나요? (더 알아보기)</summary>
@@ -275,9 +277,14 @@ function updateKnnPanel(nb, k) {
 
   const res = knnClassify([myPoint.v, myPoint.f], VIRTUAL, k, (d) => [d.v, d.f], (d) => d.s);
   const st = STATES[res.label];
+  const voteCounts = Object.values(res.votes);
+  const top = Math.max(...voteCounts);
+  const tie = voteCounts.filter((c) => c === top).length > 1; // 최다 득표가 둘 이상 = 동점
   const voteTxt = Object.keys(res.votes).map((l) => `${STATES[l].emoji} ${res.votes[l]}표`).join(" · ");
   $("#knn-verdict").innerHTML = `이웃 ${k}명의 투표: ${voteTxt}<br>
+    ${tie ? `<span class="hint">동점이에요! 이럴 땐 가장 가까운 친구를 따라 정했어요.</span><br>` : ""}
     <span class="state-card ${st.cls}" style="margin-top:0.5rem">${st.emoji} 오늘의 상태 카드: ${st.name}</span>`;
+  markTabDone("t3");
 }
 
 function initTab3() {
@@ -335,6 +342,7 @@ async function loadScatter() {
     ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.fillStyle = STATES[st].color + "cc"; ctx.fill();
   });
+  if (rows.length) markTabDone("t4");
 
   const total = Math.max(1, rows.length);
   $("#dist-bars").innerHTML = Object.keys(STATES).map((s) => {
@@ -382,6 +390,7 @@ function initTab5() {
       await ownedSet(subCol(Join.code, "plans").doc(String(Join.num)), doc);
       $("#plan-save-msg").textContent = "제출 완료! 선생님 대시보드로 전달됐어요.";
       markTabDone("t5");
+      showNextBtn("t5", "t5");
     } catch (e) { $("#plan-save-msg").textContent = e.message.includes("번호") ? e.message : friendlyError(e); }
   });
 }
@@ -420,9 +429,9 @@ function initTab6() {
     $("#app-result").style.display = "";
     markTabDone("t6");
 
-    // 오늘 기록으로도 저장
+    // 오늘 기록으로도 저장 (원답 배열은 저장하지 않음)
     ownedSet(subCol(Join.code, "entries").doc(`${Join.num}_${todayStr()}`), {
-      num: Number(Join.num), date: todayStr(), answers: ans,
+      num: Number(Join.num), date: todayStr(),
       v: sc.v, f: sc.f, r: sc.r, state: res.label,
     }).catch(() => {});
 
