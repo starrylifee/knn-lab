@@ -4,8 +4,15 @@ function $(sel, root) { return (root || document).querySelector(sel); }
 function $all(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
 const LS_KEY = "knn_teacher_classes";
-function myClasses() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { return []; } }
-function saveClasses(list) { localStorage.setItem(LS_KEY, JSON.stringify(list)); }
+const DEMO_CLASSES = [
+  { code: "DEMO4", name: "참관용 4학년 데모반", grade: 4 },
+  { code: "DEMO6", name: "참관용 6학년 데모반", grade: 6 },
+];
+function myClasses() {
+  if (window.DEMO_ON) return DEMO_CLASSES;
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { return []; }
+}
+function saveClasses(list) { if (!window.DEMO_ON) localStorage.setItem(LS_KEY, JSON.stringify(list)); }
 
 let current = null; // {code, data}
 
@@ -97,7 +104,7 @@ async function loadByCode() {
 /* ---------- 학급 상세 ---------- */
 
 async function openClass(code) {
-  await authReady;
+  if (!window.DEMO_ON) await authReady;
   const snap = await classRef(code).get();
   if (!snap.exists) return;
   current = { code, data: snap.data() };
@@ -416,4 +423,18 @@ $("#d-code").addEventListener("click", showCodeOverlay);
 $("#d-code").style.cursor = "pointer";
 $("#d-code").title = "클릭하면 크게 보여요";
 renderClassList();
-lockDashboard();
+
+if (window.DEMO_ON) {
+  // 데모: 비밀번호 없이 열고, 학급 만들기·불러오기는 숨긴다 (가상 학급 2개 고정)
+  unlockDashboard();
+  $("#dash-lock-btn").style.display = "none";
+  const side = $("#class-list").parentElement;
+  let hide = false;
+  Array.from(side.children).forEach((el) => {
+    if (el.tagName === "HR") hide = true;
+    if (hide) el.style.display = "none";
+  });
+  openClass("DEMO4");
+} else {
+  lockDashboard();
+}

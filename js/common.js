@@ -41,15 +41,19 @@ function showNextBtn(containerId, currentTabId) {
   box.appendChild(b);
 }
 
-/* 학급 참여 정보 (localStorage) */
+/* 학급 참여 정보 (localStorage). 데모 모드에서는 가상 학급에 고정. */
 const Join = {
-  get code() { return localStorage.getItem("knn_code") || ""; },
-  get num() { return localStorage.getItem("knn_num") || ""; },
+  get code() { return window.DEMO_ON ? DEMO_JOIN.code : (localStorage.getItem("knn_code") || ""); },
+  get num() { return window.DEMO_ON ? DEMO_JOIN.num : (localStorage.getItem("knn_num") || ""); },
   set(code, num) {
+    if (window.DEMO_ON) return;
     localStorage.setItem("knn_code", code);
     localStorage.setItem("knn_num", String(Number(num))); // '05'/'5' 통일
   },
-  clear() { localStorage.removeItem("knn_code"); localStorage.removeItem("knn_num"); },
+  clear() {
+    if (window.DEMO_ON) return;
+    localStorage.removeItem("knn_code"); localStorage.removeItem("knn_num");
+  },
 };
 
 let CLASS_DATA = null; // {grade, name, settings}
@@ -80,6 +84,19 @@ async function aiEnabled(key) {
 async function requireJoin(expectGrade, onReady) {
   const gate = $("#join-gate");
   const main = $("#main-area");
+
+  // 데모 모드: 코드·번호 입력 없이 가상 학급으로 바로 입장
+  if (window.DEMO_ON) {
+    const snap = await classRef(Join.code).get();
+    CLASS_DATA = snap.data();
+    gate.style.display = "none";
+    main.style.display = "";
+    $("#who-badge").textContent = `${CLASS_DATA.name} · ${Join.num}번 체험`;
+    const lb = $("#leave-btn");
+    if (lb) lb.style.display = "none";
+    onReady();
+    return;
+  }
 
   try { await authReady; } catch (e) {
     $("#join-err").textContent = "인터넷 연결을 확인하고 새로고침해 주세요.";
