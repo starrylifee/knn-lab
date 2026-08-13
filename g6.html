@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6학년 친구 추천 알고리즘 × KNN</title>
+<meta property="og:title" content="6학년 친구 추천 알고리즘 × KNN">
+<meta property="og:description" content="나와 비슷한 친구를 찾아주는 AI 추천 알고리즘 만들기">
+<meta property="og:image" content="https://knn-lab.vercel.app/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a class="logo" href="index.html">KNN 알고리즘 교실</a>
+  <span class="badge">6학년 · 친구 추천 알고리즘</span>
+  <span class="spacer"></span>
+  <span class="badge" id="who-badge"></span>
+  <button class="btn ghost small" id="leave-btn">나가기</button>
+</div>
+
+<!-- 참여 게이트 -->
+<div id="join-gate" class="landing" style="display:none">
+  <h1>우리 반에 들어가기</h1>
+  <p class="sub">선생님이 알려준 학급 코드와 내 출석번호를 입력하세요.</p>
+  <div class="panel-card" style="border-radius:18px; width:min(430px, 92vw)">
+    <div class="field"><label>학급 코드</label><input id="join-code" placeholder="예: B5X2" autocomplete="off"></div>
+    <div class="field"><label>출석번호</label><input id="join-num" type="number" min="1" max="40" placeholder="예: 12"></div>
+    <button class="btn" id="join-btn" style="width:100%">들어가기</button>
+    <p id="join-err" style="color:var(--bad); font-weight:700; margin-top:0.6rem"></p>
+  </div>
+</div>
+
+<div id="main-area" style="display:none">
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="t1">1차시 · 알고리즘 이해</button>
+    <button class="tab-btn" data-tab="t2">2차시 · 데이터 수집</button>
+    <button class="tab-btn" data-tab="t3">3차시 · 추천 설계</button>
+    <button class="tab-btn" data-tab="t4">4차시 · 개선과 토론</button>
+  </nav>
+
+  <div class="wrap">
+
+    <!-- ============ 1차시 ============ -->
+    <section class="tab-panel active panel-card" id="t1">
+      <h2>왜 사람마다 보이는 화면이 다를까?</h2>
+      <p class="lead">같은 유튜브인데 내 첫 화면과 친구 첫 화면은 완전히 달라요.
+      뒤에서 <strong>추천 알고리즘</strong>이 일하고 있기 때문이에요. 카드를 눌러 비밀을 확인해 보세요.</p>
+
+      <div class="grid c4" id="algo-cards"></div>
+
+      <h3 style="margin-top:1.6rem">'나와 비슷한 사람'을 찾는 원리 — KNN</h3>
+      <p class="lead">추천 알고리즘의 대표 선수 KNN(K-최근접 이웃)은 이렇게 생각해요:<br>
+      <strong>"너와 취향이 가장 가까운(비슷한) K명을 찾아서, 그 사람들이 좋아하는 걸 너에게도 보여줄게."</strong></p>
+
+      <div class="grid c2">
+        <div>
+          <canvas class="board" id="demo-canvas" width="560" height="480"></canvas>
+          <p class="hint">그래프를 클릭해 <strong>새로운 사람(★)</strong>을 놓아 보세요. 파랑 = 스포츠 영상파, 주황 = 음악 영상파</p>
+        </div>
+        <div>
+          <h3 style="margin-top:0">K를 바꾸면 결과가 달라져요</h3>
+          <div style="display:flex; align-items:center; gap:0.8rem">
+            <input type="range" id="demo-k" min="1" max="9" step="2" value="3" style="flex:1">
+            <strong style="font-size:1.4rem">K = <span id="demo-k-val">3</span></strong>
+          </div>
+          <div id="demo-verdict" class="result-box">그래프를 클릭해 보세요.</div>
+          <div class="notice" style="margin-top:1rem">
+            <strong>생각해 보기</strong> — K가 1일 때와 9일 때 결과가 왜 달라질까?
+            딱 한 명의 이웃만 믿는 것과 여러 명에게 물어보는 것, 어느 쪽이 더 믿을 만할까?
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2차시 ============ -->
+    <section class="tab-panel panel-card" id="t2">
+      <h2>추천 알고리즘을 위한 데이터 수집</h2>
+      <p class="lead">추천을 하려면 먼저 <strong>데이터</strong>가 필요해요. 내 취향을 숫자로 바꿔서 우리 반 데이터 창고에 모아요.</p>
+
+      <div class="steps">
+        <span class="step-chip" id="chip-survey">① 취향 설문</span>
+        <span class="step-chip" id="chip-favs">② 나의 최애</span>
+        <span class="step-chip" id="chip-topic">③ 모둠 주제</span>
+      </div>
+
+      <h3>① 취향 설문 (7문항)</h3>
+      <div id="pref-survey"></div>
+
+      <h3>② 나의 최애 — 친구에게 추천해 줄 재료가 돼요</h3>
+      <div class="grid c3">
+        <div class="field"><label>🍪 최애 과자·간식</label><input id="fav-snack" placeholder="예: 꼬북칩"></div>
+        <div class="field"><label>📺 최애 영상·유튜버</label><input id="fav-video" placeholder="예: 과학 실험 채널"></div>
+        <div class="field"><label>📚 최애 책·만화</label><input id="fav-book" placeholder="예: 흔한남매"></div>
+      </div>
+
+      <h3>③ 우리 모둠의 추천 주제</h3>
+      <div class="grid c4" id="topic-cards"></div>
+
+      <div style="margin-top:1.2rem">
+        <button class="btn" id="pref-save-btn">우리 반 데이터 창고에 저장</button>
+        <span class="hint" id="pref-save-msg"></span>
+      </div>
+
+      <div class="result-box" style="margin-top:1.2rem">
+        <h3 style="margin-top:0">📦 우리 반 데이터 창고 현황</h3>
+        <div id="pref-status">불러오는 중...</div>
+        <p class="hint">데이터가 많을수록 추천이 정확해져요. 이것이 AI 회사들이 데이터를 모으는 이유!</p>
+      </div>
+    </section>
+
+    <!-- ============ 3차시 ============ -->
+    <section class="tab-panel panel-card" id="t3">
+      <h2>나의 추천 알고리즘 설계하기</h2>
+      <p class="lead">2차시에 모은 우리 반 데이터로 <strong>나와 비슷한 친구</strong>를 찾고, 그 친구들의 최애를 추천받아요.<br>
+      그다음 <strong>AI(Solar)의 추천</strong>과 비교해 봐요.</p>
+
+      <div class="grid c2">
+        <div>
+          <h3 style="margin-top:0">내 알고리즘 규칙 정하기</h3>
+          <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:0.6rem">
+            <span style="font-weight:700">이웃 수 K</span>
+            <input type="range" id="rec-k" min="1" max="7" value="3" style="flex:1">
+            <strong style="font-size:1.3rem">K = <span id="rec-k-val">3</span></strong>
+          </div>
+          <p style="font-weight:700; margin-bottom:0.3rem">특별히 중요하게 볼 취향 (고르면 2배 가중치)</p>
+          <div class="grid c4" id="weight-cards"></div>
+          <button class="btn" id="rec-run-btn" style="margin-top:1rem">내 알고리즘 실행!</button>
+          <div id="rec-result"></div>
+        </div>
+        <div>
+          <h3 style="margin-top:0">AI(Solar)의 추천과 비교</h3>
+          <button class="btn ghost" id="ai-rec-btn" disabled>AI에게도 추천 부탁하기</button>
+          <div id="ai-rec-result" style="margin-top:0.8rem"></div>
+          <div class="field" style="margin-top:1rem"><label>같은 점 · 다른 점 기록하기</label>
+            <textarea id="compare-note" rows="4" placeholder="예: 내 알고리즘과 AI 모두 12번 친구를 골랐다. 하지만 AI는 이유를 설명해 줬다."></textarea></div>
+          <button class="btn small" id="compare-save-btn">기록 제출</button>
+          <span class="hint" id="compare-save-msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4차시 ============ -->
+    <section class="tab-panel panel-card" id="t4">
+      <h2>추천 알고리즘 개선과 토론</h2>
+      <p class="lead">AI 추천은 왜 틀릴까? 그리고 계속 맞기만 하면 더 위험할 수도 있어요.</p>
+
+      <h3>① AI 추천이 틀리는 이유 — 카드를 눌러 보세요</h3>
+      <div class="grid c4" id="wrong-cards"></div>
+
+      <h3 style="margin-top:1.4rem">② 필터버블 체험 — 추천을 계속 받으면 무슨 일이?</h3>
+      <div class="grid c2">
+        <div>
+          <p class="hint">좋아하는 주제 하나를 고르고 "추천 계속 받기"를 눌러 보세요.</p>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.7rem" id="bubble-topics"></div>
+          <button class="btn small" id="bubble-btn" disabled>▶ 추천 계속 받기</button>
+          <button class="btn ghost small" id="bubble-reset">처음으로</button>
+        </div>
+        <div id="bubble-bars"></div>
+      </div>
+      <div class="notice" id="bubble-msg" style="display:none"></div>
+
+      <h3 style="margin-top:1.4rem">③ AI와 토론하기</h3>
+      <p class="hint">궁금한 것을 묻거나 내 생각을 말해 보세요. AI는 정답 대신 생각거리를 던져 줘요.</p>
+      <div class="chat-box">
+        <div class="chat-log" id="chat-log">
+          <div class="chat-msg ai">안녕하세요! 추천 알고리즘의 편향과 필터버블에 대해 함께 이야기해 봐요. 어떤 생각이 드나요?</div>
+        </div>
+        <div class="chat-input">
+          <input id="chat-input" placeholder="예: 추천 알고리즘은 좋은 걸까요 나쁜 걸까요?">
+          <button class="btn small" id="chat-send">보내기</button>
+        </div>
+      </div>
+
+      <h3 style="margin-top:1.4rem">④ 우리 생활에 필요한 새로운 추천 알고리즘 기획</h3>
+      <div class="grid c2">
+        <div class="field"><label>무엇을 추천하는 알고리즘인가요?</label><input id="idea-what" placeholder="예: 학교 도서관에서 나에게 맞는 책 추천"></div>
+        <div class="field"><label>누구를 위한 것인가요?</label><input id="idea-who" placeholder="예: 책 고르기 어려워하는 친구들"></div>
+      </div>
+      <div class="field"><label>어떤 데이터를 모으고, 어떤 규칙으로 추천하나요?</label>
+        <textarea id="idea-rule" rows="3" placeholder="예: 좋아하는 과목, 읽은 책 목록을 모아서 나와 비슷한 친구가 재밌게 읽은 책을 추천"></textarea></div>
+      <div class="field"><label>편향·필터버블을 막을 나만의 장치는?</label>
+        <textarea id="idea-guard" rows="2" placeholder="예: 열 번에 한 번은 전혀 다른 종류의 책을 섞어서 추천"></textarea></div>
+      <button class="btn" id="idea-save-btn">기획 제출하기</button>
+      <span class="hint" id="idea-save-msg"></span>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/knn.js"></script>
+<script src="js/common.js"></script>
+<script src="js/g6.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 학급 코드 기반 수업용 앱 — 로그인 없이 코드로 참여 (개인정보는 출석번호만 저장)
+    match /classes/{code} {
+      allow read, create, update: if true;
+      allow delete: if false;
+
+      match /{sub}/{doc} {
+        allow read, create, update, delete: if true;
+      }
+    }
+  }
+}

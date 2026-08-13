@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4학년 감정일기 × KNN</title>
+<meta property="og:title" content="4학년 감정일기 × KNN">
+<meta property="og:description" content="내 하루를 숫자로 바꾸면, AI가 비슷한 하루를 찾아줘요">
+<meta property="og:image" content="https://knn-lab.vercel.app/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a class="logo" href="index.html">KNN 알고리즘 교실</a>
+  <span class="badge">4학년 · 감정일기</span>
+  <span class="spacer"></span>
+  <span class="badge" id="who-badge"></span>
+  <button class="btn ghost small" id="leave-btn">나가기</button>
+</div>
+
+<!-- 참여 게이트 -->
+<div id="join-gate" class="landing" style="display:none">
+  <h1>우리 반에 들어가기</h1>
+  <p class="sub">선생님이 알려준 학급 코드와 내 출석번호를 입력해요.</p>
+  <div class="panel-card" style="border-radius:18px; width:min(430px, 92vw)">
+    <div class="field"><label>학급 코드</label><input id="join-code" placeholder="예: A3K7" autocomplete="off"></div>
+    <div class="field"><label>출석번호</label><input id="join-num" type="number" min="1" max="40" placeholder="예: 12"></div>
+    <button class="btn" id="join-btn" style="width:100%">들어가기</button>
+    <p id="join-err" style="color:var(--bad); font-weight:700; margin-top:0.6rem"></p>
+  </div>
+</div>
+
+<div id="main-area" style="display:none">
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="t1">1차시 · 비슷한 친구 찾기</button>
+    <button class="tab-btn" data-tab="t2">2차시 · 하루를 숫자로</button>
+    <button class="tab-btn" data-tab="t3">3차시 · KNN 손으로</button>
+    <button class="tab-btn" data-tab="t4">4차시 · 그래프 읽기</button>
+    <button class="tab-btn" data-tab="t5">5차시 · 웹앱 기획</button>
+    <button class="tab-btn" data-tab="t6">6차시 · 감정일기 앱</button>
+  </nav>
+
+  <div class="wrap">
+
+    <!-- ============ 1차시 ============ -->
+    <section class="tab-panel active panel-card" id="t1">
+      <h2>AI는 어떻게 비슷한 것을 찾을까?</h2>
+      <p class="lead">놀이동산에 간다면 뭘 하고 싶어? 좋아하는 카드 <strong>4장</strong>을 골라 봐요.<br>
+      나와 <strong>고른 카드가 많이 겹치는 친구</strong>가 나와 취향이 <strong>가까운(비슷한)</strong> 친구예요.</p>
+
+      <div class="grid c4" id="theme-cards"></div>
+
+      <div style="margin-top:1.2rem; display:flex; gap:0.7rem; align-items:center">
+        <button class="btn" id="card-match-btn" disabled>비슷한 친구 찾기</button>
+        <span class="hint" id="card-count-hint">0 / 4 장 골랐어요</span>
+      </div>
+
+      <div id="card-result" style="display:none">
+        <div class="result-box">
+          <h3 style="margin-top:0">나와 취향이 가까운 친구 순위</h3>
+          <div id="card-ranking"></div>
+        </div>
+        <div class="notice">
+          <strong>이게 바로 KNN이에요!</strong> K-최근접 이웃(K-Nearest Neighbors)은
+          <strong>나와 가장 가까운(비슷한) K명의 이웃</strong>을 찾아서,
+          그 이웃들을 보고 나에 대해 짐작하는 방법이에요.
+          겹치는 카드가 많을수록 = 거리가 가까울수록 = 더 비슷한 이웃!
+        </div>
+        <button class="btn ghost" id="card-save-btn">우리 반 데이터로 저장하기</button>
+        <span class="hint" id="card-save-msg"></span>
+        <div id="class-card-ranking" style="margin-top:1rem"></div>
+      </div>
+    </section>
+
+    <!-- ============ 2차시 ============ -->
+    <section class="tab-panel panel-card" id="t2">
+      <h2>나의 하루 데이터를 숫자로 바꾸기</h2>
+      <p class="lead">오늘 하루를 떠올리며 10문항에 답해요. 컴퓨터는 <strong>숫자</strong>가 있어야 비교할 수 있어요.<br>
+      답하고 나면 <strong>활력 · 집중 · 관계</strong> 세 가지 지표가 계산돼요.</p>
+
+      <div id="daily-survey"></div>
+
+      <div style="margin-top:1.2rem">
+        <button class="btn" id="daily-calc-btn">내 지표 계산하기</button>
+      </div>
+
+      <div id="daily-result" style="display:none">
+        <div class="result-box">
+          <h3 style="margin-top:0">오늘의 나, 숫자로 보면</h3>
+          <div id="daily-bars"></div>
+          <p class="hint" style="margin-top:0.6rem">지표는 각 영역 문항의 평균이에요 (1점 = 낮음, 5점 = 높음)</p>
+        </div>
+        <button class="btn ghost" id="daily-save-btn" style="margin-top:0.8rem">오늘 기록 저장하기</button>
+        <span class="hint" id="daily-save-msg"></span>
+      </div>
+    </section>
+
+    <!-- ============ 3차시 ============ -->
+    <section class="tab-panel panel-card" id="t3">
+      <h2>KNN 알고리즘 손으로 해 보기</h2>
+      <p class="lead">가상 학생 12명이 좌표평면 위에 있어요 (가로 = 활력, 세로 = 집중).<br>
+      그래프를 <strong>클릭해서 내 위치를 찍고</strong>, 가까운 이웃 K명의 다수결로 내 상태 카드를 정해요.</p>
+
+      <div class="grid c2">
+        <div>
+          <canvas class="board" id="knn-canvas" width="560" height="560"></canvas>
+          <p class="hint" id="knn-mypos">그래프를 클릭해서 내 위치를 정해 보세요. (2차시를 했다면 내 지표가 미리 표시돼요)</p>
+        </div>
+        <div>
+          <h3 style="margin-top:0">① 거리 계산하기</h3>
+          <p class="hint">거리 = √( (활력 차이)² + (집중 차이)² ) — 표의 계산을 공책에 따라 써 보세요.</p>
+          <div id="knn-table"></div>
+          <h3>② K 정하기 <span class="hint">(가까운 이웃 몇 명에게 물어볼까?)</span></h3>
+          <div style="display:flex; align-items:center; gap:0.8rem">
+            <input type="range" id="knn-k" min="1" max="5" value="3" style="flex:1">
+            <strong style="font-size:1.4rem">K = <span id="knn-k-val">3</span></strong>
+          </div>
+          <h3>③ 다수결 결과</h3>
+          <div id="knn-verdict" class="result-box" style="margin-top:0.4rem">내 위치를 먼저 찍어 주세요.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4차시 ============ -->
+    <section class="tab-panel panel-card" id="t4">
+      <h2>AI 분석 결과를 그래프로 읽기</h2>
+      <p class="lead">우리 반 친구들의 기록(2차시 저장 데이터)을 <strong>이름 없이 번호로만</strong> 그래프에 올려요.</p>
+
+      <div class="grid c2">
+        <div>
+          <h3 style="margin-top:0">우리 반 산점도</h3>
+          <canvas class="board" id="scatter-canvas" width="560" height="560"></canvas>
+          <button class="btn ghost small" id="scatter-reload" style="margin-top:0.5rem">새로고침</button>
+          <span class="hint" id="scatter-info"></span>
+        </div>
+        <div>
+          <h3 style="margin-top:0">상태 카드 분포</h3>
+          <div id="dist-bars"></div>
+          <h3>다 같이 이야기해 봐요</h3>
+          <div class="mini-card" style="margin-bottom:0.6rem">💬 그래프에서 <strong>가까이 모여 있는 친구들</strong>은 어떤 공통점이 있을까?</div>
+          <div class="mini-card" style="margin-bottom:0.6rem">💬 AI가 숫자만 보고 내 기분을 판단하면 <strong>어떤 점이 편리하고, 어떤 점이 걱정될까?</strong></div>
+          <div class="mini-card">💬 숫자로 바꿀 수 <strong>없는</strong> 내 마음에는 어떤 것이 있을까?</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5차시 ============ -->
+    <section class="tab-panel panel-card" id="t5">
+      <h2>우리가 사용할 웹앱 기획하기</h2>
+      <p class="lead">KNN 기분 분석 웹앱을 우리 손으로 기획해요. 기획서는 선생님에게 전달돼요.</p>
+
+      <div class="field"><label>1. 앱 이름</label><input id="plan-name" placeholder="예: 마음날씨"></div>
+      <div class="field"><label>2. 누가, 언제 사용하나요?</label><input id="plan-who" placeholder="예: 우리 반 친구들이 아침 활동 시간에"></div>
+      <div class="field"><label>3. 꼭 필요한 기능 (모두 골라요)</label>
+        <div class="grid c3" id="plan-feats"></div>
+      </div>
+      <div class="field"><label>4. 화면은 어떻게 생겼으면 좋겠어요?</label><textarea id="plan-screen" rows="3" placeholder="예: 첫 화면에 큰 해님 버튼이 있고, 누르면 설문이 하나씩 나와요"></textarea></div>
+      <div class="field"><label>5. 걱정되는 점 · 지켜야 할 약속</label><textarea id="plan-worry" rows="2" placeholder="예: 내 기분을 다른 친구가 못 보게 해야 해요"></textarea></div>
+      <button class="btn" id="plan-save-btn">기획서 제출하기</button>
+      <span class="hint" id="plan-save-msg"></span>
+    </section>
+
+    <!-- ============ 6차시 ============ -->
+    <section class="tab-panel panel-card" id="t6">
+      <h2>완성! 감정일기 웹앱 사용하고 검토하기</h2>
+      <p class="lead">여러분의 기획서를 바탕으로 선생님이 바이브코딩으로 만든 <strong>감정일기 웹앱</strong>이에요.<br>
+      직접 사용해 보고, 개발자의 눈으로 검토 의견을 남겨요.</p>
+
+      <div class="mini-card" style="background:var(--brand-soft); border-color:var(--brand); margin-bottom:1rem">
+        <h3 style="margin-top:0">🌤️ 오늘의 마음날씨</h3>
+        <p class="hint">10문항에 답하면, KNN이 우리 반 데이터에서 <strong>나와 비슷한 하루</strong>를 찾아 상태 카드를 정하고 AI가 한마디를 건네요.</p>
+        <div id="app-survey"></div>
+        <button class="btn" id="app-run-btn" style="margin-top:0.8rem">분석하기</button>
+        <div id="app-result" style="display:none">
+          <div class="result-box">
+            <div id="app-verdict"></div>
+            <div id="app-comment" style="margin-top:0.7rem"></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>개발자 검토 의견</h3>
+      <div class="grid c3" id="review-stars"></div>
+      <div class="field" style="margin-top:0.8rem"><label>한 줄 검토평</label><input id="review-text" placeholder="예: 결과 카드가 마음에 들어요. 그런데 문항이 조금 많아요."></div>
+      <button class="btn" id="review-save-btn">검토 의견 보내기</button>
+      <span class="hint" id="review-save-msg"></span>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/knn.js"></script>
+<script src="js/common.js"></script>
+<script src="js/g4.js"></script>
+</body>
+</html>

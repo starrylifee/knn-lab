@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교사 대시보드 — KNN 알고리즘 교실</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 1.2rem; max-width: 1400px; margin: 1.2rem auto; padding: 0 1.4rem 3rem; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .side-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem; height: fit-content; }
+  .class-item { border: 1.5px solid var(--line); border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; cursor: pointer; display:flex; justify-content:space-between; align-items:center; }
+  .class-item:hover { border-color: var(--brand); }
+  .class-item.on { border-color: var(--brand); background: var(--brand-soft); }
+  .toggle-row { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding:0.7rem 0; }
+  .switch { position:relative; width:52px; height:28px; }
+  .switch input { display:none; }
+  .switch span { position:absolute; inset:0; background:#cbd5e1; border-radius:999px; transition:0.2s; cursor:pointer; }
+  .switch span::after { content:""; position:absolute; width:22px; height:22px; border-radius:50%; background:#fff; top:3px; left:3px; transition:0.2s; }
+  .switch input:checked + span { background:var(--ok); }
+  .switch input:checked + span::after { left:27px; }
+  .sec-tabs { display:flex; gap:0.4rem; margin-bottom:0.9rem; flex-wrap:wrap; }
+  .sec-tabs button { border:1.5px solid var(--line); background:var(--card); border-radius:999px; padding:0.4rem 1rem; font-weight:700; color:var(--ink-soft); }
+  .sec-tabs button.on { background:var(--brand); border-color:var(--brand); color:#fff; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="logo" href="index.html">KNN 알고리즘 교실</a>
+  <span class="badge">🧑‍🏫 교사 대시보드</span>
+  <span class="spacer"></span>
+</div>
+
+<div class="layout">
+  <!-- 왼쪽: 학급 관리 -->
+  <div>
+    <div class="side-card">
+      <h2 style="margin-top:0">내 학급</h2>
+      <div id="class-list"><p class="hint">아직 학급이 없어요. 아래에서 만들어 보세요.</p></div>
+      <hr style="border:none; border-top:1px solid var(--line); margin:1rem 0">
+      <h3 style="margin-top:0">새 학급 만들기</h3>
+      <div class="field"><label>학년</label>
+        <select id="new-grade"><option value="4">4학년 · 감정일기</option><option value="6">6학년 · 친구 추천</option></select></div>
+      <div class="field"><label>학급 이름</label><input id="new-name" placeholder="예: 4학년 2반"></div>
+      <div class="field"><label>교사 PIN (4자리 숫자)</label><input id="new-pin" type="password" maxlength="4" placeholder="데이터 관리에 사용해요"></div>
+      <button class="btn" id="create-btn" style="width:100%">학급 만들기</button>
+      <p class="hint" id="create-msg" style="margin-top:0.5rem"></p>
+      <hr style="border:none; border-top:1px solid var(--line); margin:1rem 0">
+      <h3 style="margin-top:0">코드로 학급 불러오기</h3>
+      <div style="display:flex; gap:0.5rem">
+        <input id="load-code" placeholder="학급 코드" style="flex:1; border:1.5px solid var(--line); border-radius:10px; padding:0.5rem 0.7rem">
+        <button class="btn small" id="load-btn">불러오기</button>
+      </div>
+      <p class="hint" id="load-msg" style="margin-top:0.4rem"></p>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 학급 상세 -->
+  <div>
+    <div class="side-card" id="detail-empty">
+      <h2 style="margin-top:0">학급을 선택하세요</h2>
+      <p class="hint">학급을 만들면 학생들에게 알려줄 <strong>학급 코드</strong>가 생겨요.
+      학생들은 첫 화면에서 학년을 고르고 코드와 출석번호로 들어옵니다.</p>
+    </div>
+
+    <div class="side-card" id="detail" style="display:none">
+      <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap">
+        <h2 style="margin:0" id="d-title"></h2>
+        <span class="badge" style="font-size:1.3rem; letter-spacing:0.15em" id="d-code"></span>
+        <span class="spacer"></span>
+        <button class="btn ghost small" id="d-refresh">🔄 새로고침</button>
+      </div>
+      <p class="hint" style="margin:0.4rem 0 1rem">학생들에게 이 코드를 알려주세요. 화면 공유용으로 크게 보여도 좋아요.</p>
+
+      <div class="sec-tabs" id="sec-tabs"></div>
+      <div id="sec-body"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/teacher.js"></script>
+</body>
+</html>
