@@ -31,6 +31,17 @@
   details.rule { margin-top: 0.9rem; }
   details.rule summary { cursor: pointer; font-weight: 700; color: var(--ink-soft); }
   details.rule p { color: var(--ink-soft); font-size: 0.95rem; margin: 0.4rem 0; }
+
+  /* 애니메이션 튜토리얼 오버레이 */
+  #intro-ov { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); z-index: 999;
+    display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+  .intro-box { width: min(1040px, 96vw); background: #fff; border-radius: 20px; padding: 1.2rem 1.4rem 1rem; }
+  #intro-cv { width: 100%; border-radius: 12px; background: #fbfcfe; border: 2px solid var(--line); display: block; }
+  .intro-cap { font-size: 1.35rem; font-weight: 800; text-align: center; margin: 0.8rem 0 0.4rem; min-height: 1.7em; }
+  .intro-dots { display: flex; gap: 0.45rem; justify-content: center; margin-bottom: 0.7rem; }
+  .intro-dots span { width: 11px; height: 11px; border-radius: 50%; background: #e2e8f0; transition: 0.2s; }
+  .intro-dots span.on { background: var(--brand); transform: scale(1.25); }
+  .intro-btns { display: flex; gap: 0.6rem; justify-content: center; padding-bottom: 0.4rem; }
 </style>
 </head>
 <body>
@@ -84,8 +95,9 @@
     </div>
 
     <div class="side-card" style="margin-top:1.2rem">
-      <details class="rule" open>
-        <summary>📖 게임 방법 (30초 설명)</summary>
+      <button class="btn gbtn" id="intro-open" style="margin-top:0">📽 게임 방법 애니메이션 (25초)</button>
+      <details class="rule">
+        <summary>📖 글로 읽기</summary>
         <p>① 모둠이 번갈아 보드를 눌러 <strong>말을 2개씩</strong> 놓아요.</p>
         <p>② <strong>⭐ 별</strong>이 떨어지면, 별과 <strong>가장 가까운 이웃 K명</strong>이 투표해요.</p>
         <p>③ 표가 많은 모둠이 별을 가져가요. 동점이면 더 가까운 말이 이겨요.</p>
@@ -102,7 +114,22 @@
   </div>
 </div>
 
+<!-- 게임 방법 애니메이션 오버레이 -->
+<div id="intro-ov" style="display:none">
+  <div class="intro-box">
+    <canvas id="intro-cv" width="960" height="540"></canvas>
+    <p class="intro-cap" id="intro-cap"></p>
+    <div class="intro-dots" id="intro-dots"></div>
+    <div class="intro-btns">
+      <button class="btn ghost small" id="intro-skip">건너뛰기 ✕</button>
+      <button class="btn ghost small" id="intro-replay" style="display:none">↺ 다시 보기</button>
+      <button class="btn" id="intro-start" style="display:none; font-size:1.05rem">게임 시작하기 →</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/knn.js"></script>
 <script src="js/game.js"></script>
+<script src="js/game-intro.js"></script>
 </body>
 </html>
