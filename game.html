@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KNN 땅따먹기 — 4·6학년 공통 게임</title>
+<meta property="og:title" content="KNN 땅따먹기">
+<meta property="og:description" content="모둠 말을 놓고 별⭐의 주인을 이웃 투표로 정해요 — KNN을 몸으로 배우는 보드 게임">
+<meta property="og:image" content="https://knn-lab.vercel.app/og.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .game-wrap { max-width: 1400px; margin: 1rem auto 3rem; padding: 0 1.4rem; display: grid; grid-template-columns: 1fr 340px; gap: 1.2rem; }
+  @media (max-width: 1000px) { .game-wrap { grid-template-columns: 1fr; } }
+  .board-card, .side-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem; }
+  #game-board { width: 100%; border: 2px solid var(--line); border-radius: 12px; background: #fbfcfe; cursor: crosshair; display: block; }
+  .phase-msg { font-size: 1.25rem; font-weight: 800; margin: 0.6rem 0 0.2rem; min-height: 1.6em; }
+  .phase-sub { color: var(--ink-soft); min-height: 1.4em; }
+  .team-row { display: flex; align-items: center; gap: 0.6rem; border: 2px solid transparent; border-radius: 12px; padding: 0.55rem 0.8rem; margin-bottom: 0.45rem; background: #f8fafc; }
+  .team-row.turn { border-color: var(--brand); background: var(--brand-soft); }
+  .team-dot { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+  .team-name { font-weight: 800; flex: 1; }
+  .team-score { font-weight: 800; font-size: 1.05rem; }
+  .k-pill { display: inline-block; background: #0f172a; color: #fff; font-weight: 800; border-radius: 999px; padding: 0.3rem 0.9rem; font-size: 1.05rem; }
+  .gbtn { width: 100%; margin-top: 0.5rem; }
+  .setup-row { display: flex; gap: 0.5rem; margin: 0.4rem 0 0.8rem; flex-wrap: wrap; }
+  .setup-row button { flex: 1; border: 2px solid var(--line); background: #fff; border-radius: 10px; padding: 0.55rem 0; font-weight: 800; font-size: 1rem; }
+  .setup-row button.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-deep); }
+  .verdict-box { margin-top: 0.7rem; padding: 0.8rem 1rem; border-radius: 12px; background: #fffbeb; border: 1.5px solid #fde68a; font-size: 1.05rem; display: none; }
+  details.rule { margin-top: 0.9rem; }
+  details.rule summary { cursor: pointer; font-weight: 700; color: var(--ink-soft); }
+  details.rule p { color: var(--ink-soft); font-size: 0.95rem; margin: 0.4rem 0; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="logo" href="index.html">KNN 알고리즘 교실</a>
+  <span class="badge">🎲 KNN 땅따먹기 · 4·6학년 공통</span>
+  <span class="spacer"></span>
+  <button class="btn ghost small" id="reset-btn">🔄 처음부터</button>
+</div>
+
+<div class="game-wrap">
+  <!-- 왼쪽: 보드 -->
+  <div class="board-card">
+    <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap">
+      <span class="k-pill" id="k-pill">K = 1</span>
+      <span style="font-weight:800" id="round-label">준비</span>
+      <span class="spacer"></span>
+      <label style="display:flex; align-items:center; gap:0.4rem; font-weight:700; color:var(--ink-soft); cursor:pointer">
+        <input type="checkbox" id="territory-toggle" style="width:18px; height:18px"> 땅 미리보기
+      </label>
+    </div>
+    <p class="phase-msg" id="phase-msg">모둠 수를 고르고 게임을 시작하세요!</p>
+    <p class="phase-sub" id="phase-sub"></p>
+    <canvas id="game-board" width="960" height="540"></canvas>
+    <div class="verdict-box" id="verdict"></div>
+  </div>
+
+  <!-- 오른쪽: 점수판/조작 -->
+  <div>
+    <div class="side-card" id="setup-card">
+      <h2 style="margin-top:0">게임 설정</h2>
+      <p style="font-weight:700; margin-bottom:0.2rem">모둠 수</p>
+      <div class="setup-row" id="team-count-row">
+        <button data-n="2">2모둠</button>
+        <button data-n="3" class="on">3모둠</button>
+        <button data-n="4">4모둠</button>
+      </div>
+      <p style="font-weight:700; margin-bottom:0.2rem">난이도</p>
+      <div class="setup-row" id="level-row">
+        <button data-l="easy" class="on">쉬움 · 4라운드<br><small>K = 1 → 3</small></button>
+        <button data-l="hard">도전 · 5라운드<br><small>K = 1 → 3 → 5</small></button>
+      </div>
+      <button class="btn gbtn" id="start-btn" style="font-size:1.1rem">게임 시작!</button>
+    </div>
+
+    <div class="side-card" id="play-card" style="display:none">
+      <h2 style="margin-top:0">점수판</h2>
+      <div id="team-list"></div>
+      <button class="btn gbtn" id="drop-btn" style="font-size:1.15rem" disabled>⭐ 별 떨어뜨리기</button>
+      <button class="btn gbtn ghost" id="next-btn" style="display:none">다음 라운드 →</button>
+    </div>
+
+    <div class="side-card" style="margin-top:1.2rem">
+      <details class="rule" open>
+        <summary>📖 게임 방법 (30초 설명)</summary>
+        <p>① 모둠이 번갈아 보드를 눌러 <strong>말을 2개씩</strong> 놓아요.</p>
+        <p>② <strong>⭐ 별</strong>이 떨어지면, 별과 <strong>가장 가까운 이웃 K명</strong>이 투표해요.</p>
+        <p>③ 표가 많은 모둠이 별을 가져가요. 동점이면 더 가까운 말이 이겨요.</p>
+        <p>④ 라운드가 갈수록 K가 커져요 — 한 명만 믿기(K=1)에서 여러 명에게 묻기(K=3, 5)로!</p>
+        <p>⑤ 마지막엔 <strong>땅 나누기</strong> — 보드의 모든 곳을 KNN으로 색칠해 넓은 모둠을 알아봐요.</p>
+      </details>
+      <details class="rule">
+        <summary>🧑‍🏫 선생님 팁</summary>
+        <p>전자칠판에 띄우고 모둠 대표가 나와서 말을 놓게 하세요. 별이 나오기 전 "어느 모둠 땅일까?"를 먼저 예상하게 하면 토론이 살아나요.</p>
+        <p>교실 바닥에 테이프로 좌표를 만들고 학생이 직접 말이 되는 오프라인 버전과 병행하면 40분 수업이 알차요.</p>
+        <p>이 게임이 바로 KNN 분류예요 — 별(새 데이터)의 종류(모둠)를 가까운 이웃 K명의 투표로 정하는 것!</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script src="js/knn.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

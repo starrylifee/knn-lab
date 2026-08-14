@@ -207,6 +207,22 @@ canvas.board { width: 100%; border: 1.5px solid var(--line); border-radius: var(
 .entry-card h2 { margin: 0 0 0.4rem; }
 .entry-card p { color: var(--ink-soft); font-size: 0.98rem; }
 
+/* 랜딩 — 공통 게임 배너 */
+.game-banner {
+  max-width: 1000px; width: 100%; margin-top: 1.4rem;
+  display: flex; align-items: center; gap: 1rem;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1.5px solid #fcd34d; border-radius: 18px;
+  padding: 1.1rem 1.5rem; text-decoration: none; color: var(--ink); transition: all 0.15s;
+}
+.game-banner:hover { border-color: #f59e0b; transform: translateY(-2px); box-shadow: 0 8px 18px rgba(245, 158, 11, 0.18); }
+.gb-emoji { font-size: 2.2rem; }
+.gb-text { flex: 1; }
+.gb-text b { font-size: 1.15rem; }
+.gb-text small { display: block; color: var(--ink-soft); margin-top: 0.15rem; }
+.gb-tag { background: #f59e0b; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 0.18rem 0.6rem; border-radius: 999px; vertical-align: 2px; margin-left: 0.3rem; }
+.gb-go { font-weight: 800; color: #b45309; white-space: nowrap; }
+
 /* 랜딩 — 참관·연수용 데모 박스 */
 .demo-box {
   max-width: 1000px; width: 100%; margin-top: 1.6rem;
