@@ -207,8 +207,9 @@ canvas.board { width: 100%; border: 1.5px solid var(--line); border-radius: var(
 .entry-card h2 { margin: 0 0 0.4rem; }
 .entry-card p { color: var(--ink-soft); font-size: 0.98rem; }
 
-/* 랜딩 — 연구회 푸터 */
-.site-footer { margin-top: 2.6rem; padding-top: 1.6rem; border-top: 1px solid var(--line); text-align: center; width: 100%; max-width: 1000px; }
+/* 연구회 로고·푸터 (전 페이지 공통) */
+.topbar-logo { height: 26px; opacity: 0.85; margin-left: 0.7rem; flex: none; }
+.site-footer { margin: 2.6rem auto 0; padding: 1.6rem 1rem 2.2rem; border-top: 1px solid var(--line); text-align: center; width: 100%; max-width: 1000px; }
 .site-footer img { height: 86px; opacity: 0.92; }
 .site-footer p { color: var(--ink-soft); font-size: 0.88rem; margin-top: 0.6rem; }
 
