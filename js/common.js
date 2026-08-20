@@ -36,7 +36,7 @@ function showNextBtn(containerId, currentTabId) {
   const b = document.createElement("button");
   b.className = "btn next-tab-btn";
   b.style.marginTop = "0.9rem";
-  b.textContent = "다음 차시로 →";
+  b.textContent = "다음 활동으로 →";
   b.addEventListener("click", () => goNextTab(currentTabId));
   box.appendChild(b);
 }

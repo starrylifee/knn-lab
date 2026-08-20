@@ -223,9 +223,9 @@ async function runMyAlgorithm() {
   box.innerHTML = `<p class="loading">우리 반 데이터를 살펴보는 중</p>`;
   const all = await loadPrefs();
   const me = all.find((p) => String(p.num) === String(Join.num));
-  if (!me) { box.innerHTML = `<div class="notice">먼저 2차시에서 내 취향 데이터를 저장해 주세요!</div>`; return; }
+  if (!me) { box.innerHTML = `<div class="notice">먼저 활동②에서 내 취향 데이터를 저장해 주세요!</div>`; return; }
   const others = all.filter((p) => String(p.num) !== String(Join.num));
-  if (others.length < 2) { box.innerHTML = `<div class="notice">아직 친구들 데이터가 부족해요 (${others.length}명). 친구들이 2차시를 마치면 다시 실행해 보세요.</div>`; return; }
+  if (others.length < 2) { box.innerHTML = `<div class="notice">아직 친구들 데이터가 부족해요 (${others.length}명). 친구들이 활동②를 마치면 다시 실행해 보세요.</div>`; return; }
 
   const k = Math.min(Number($("#rec-k").value), others.length);
   const weights = PREF_LABELS.map((_, i) =>
@@ -412,7 +412,7 @@ function initTab4() {
       guard: $("#idea-guard").value.trim(),
     };
     if (!doc.what || !doc.rule) { $("#idea-save-msg").textContent = "무엇을 추천하는지, 어떤 규칙인지 적어 주세요!"; return; }
-    if (!doc.guard) { $("#idea-save-msg").textContent = "4차시에서 배운 '편향 막는 방법'을 하나만 적어 주세요!"; $("#idea-guard").focus(); return; }
+    if (!doc.guard) { $("#idea-save-msg").textContent = "활동④에서 배운 '편향 막는 방법'을 하나만 적어 주세요!"; $("#idea-guard").focus(); return; }
     try {
       await ownedSet(subCol(Join.code, "ideas").doc(String(Join.num)), doc);
       $("#idea-save-msg").textContent = "제출 완료! 선생님 대시보드로 전달됐어요.";

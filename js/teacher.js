@@ -133,16 +133,16 @@ async function openClass(code) {
 const SECTIONS4 = [
   { id: "status", name: "현황·설정" },
   { id: "scatter", name: "감정 그래프(전자칠판)" },
-  { id: "cards", name: "1차시 취향카드" },
-  { id: "entries", name: "감정 기록(2·6차시)" },
-  { id: "plans", name: "5차시 기획서" },
-  { id: "reviews", name: "6차시 검토평" },
+  { id: "cards", name: "활동① 취향카드" },
+  { id: "entries", name: "감정 기록(활동②·⑥)" },
+  { id: "plans", name: "활동⑤ 기획서" },
+  { id: "reviews", name: "활동⑥ 검토평" },
 ];
 const SECTIONS6 = [
   { id: "status", name: "현황·설정" },
-  { id: "prefs", name: "2차시 취향 데이터" },
-  { id: "compare", name: "3차시 AI 비교 기록" },
-  { id: "ideas", name: "4차시 알고리즘 기획" },
+  { id: "prefs", name: "활동② 취향 데이터" },
+  { id: "compare", name: "활동③ AI 비교 기록" },
+  { id: "ideas", name: "활동④ 알고리즘 기획" },
 ];
 
 let curSec = "status";
@@ -197,8 +197,8 @@ async function renderSection() {
     for (const s of subs) rowsBySub[s] = await getAll(s);
     const st = current.data.settings || {};
     const toggles = g === 4
-      ? [["aiComment", "AI 한마디 (6차시 감정일기 코멘트)"]]
-      : [["aiCompare", "AI 추천 비교 (3차시)"], ["aiChat", "AI 토론 도우미 (4차시)"]];
+      ? [["aiComment", "AI 한마디 (활동⑥ 감정일기 코멘트)"]]
+      : [["aiCompare", "AI 추천 비교 (활동③)"], ["aiChat", "AI 토론 도우미 (활동④)"]];
 
     // 제출 현황: 대표 컬렉션(4학년=entries, 6학년=prefs) 기준 번호 격자
     const primary = g === 4 ? "entries" : "prefs";

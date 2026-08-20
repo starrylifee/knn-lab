@@ -306,7 +306,7 @@ function initTab3() {
     if (e.detail === "t3") {
       if (!myPoint && myToday) {
         myPoint = { v: myToday.v, f: myToday.f };
-        $("#knn-mypos").textContent = `내 위치(2차시 점수): 활력 ${myToday.v}, 집중 ${myToday.f}  (다른 곳을 누르면 옮길 수 있어요)`;
+        $("#knn-mypos").textContent = `내 위치(활동② 점수): 활력 ${myToday.v}, 집중 ${myToday.f}  (다른 곳을 누르면 옮길 수 있어요)`;
       }
       drawKnn();
     }
@@ -328,7 +328,7 @@ async function loadScatter() {
   if (!rows.length) {
     ctx.fillStyle = "#94a3b8"; ctx.font = "bold 17px sans-serif"; ctx.textAlign = "center";
     ctx.fillText("아직 저장된 기록이 없어요.", canvas.width / 2, canvas.height / 2 - 12);
-    ctx.fillText("2차시에서 '오늘 기록 저장하기'를 누르면", canvas.width / 2, canvas.height / 2 + 14);
+    ctx.fillText("활동②에서 '오늘 기록 저장하기'를 누르면", canvas.width / 2, canvas.height / 2 + 14);
     ctx.fillText("여기에 점이 생겨요!", canvas.width / 2, canvas.height / 2 + 40);
     ctx.textAlign = "left";
   }
