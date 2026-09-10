@@ -1,0 +1,17 @@
+{
+  "name": "knn-lab",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test tests/microbe-*.test.cjs",
+    "test:api": "node tests/microbe-api-live.cjs",
+    "preview:game": "node tools/microbe-dev.cjs"
+  },
+  "description": "KNN classroom and server-authoritative two-player microbe game",
+  "dependencies": {
+    "firebase-admin": "13.10.0"
+  },
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  }
+}

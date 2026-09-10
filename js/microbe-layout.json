@@ -1,0 +1,297 @@
+{
+  "unit": "mm",
+  "page": [
+    420,
+    297
+  ],
+  "sites": [
+    {
+      "pair": 0,
+      "side": 0,
+      "x": 110.86,
+      "y": 78.49,
+      "id": 1,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 0,
+      "side": 1,
+      "x": 185.14,
+      "y": 78.49,
+      "id": 2,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 1,
+      "side": 0,
+      "x": 135.5,
+      "y": 81.99,
+      "id": 3,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 1,
+      "side": 1,
+      "x": 160.5,
+      "y": 81.99,
+      "id": 4,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 2,
+      "side": 0,
+      "x": 85.22,
+      "y": 94.27,
+      "id": 5,
+      "start": "red",
+      "nutrient": false
+    },
+    {
+      "pair": 2,
+      "side": 1,
+      "x": 210.78,
+      "y": 94.27,
+      "id": 6,
+      "start": "blue",
+      "nutrient": false
+    },
+    {
+      "pair": 3,
+      "side": 0,
+      "x": 126.35,
+      "y": 108.99,
+      "id": 7,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 3,
+      "side": 1,
+      "x": 169.65,
+      "y": 108.99,
+      "id": 8,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 4,
+      "side": 0,
+      "x": 97.78,
+      "y": 117.23,
+      "id": 9,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 4,
+      "side": 1,
+      "x": 198.22,
+      "y": 117.23,
+      "id": 10,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 5,
+      "side": 0,
+      "x": 66.74,
+      "y": 124.84,
+      "id": 11,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 5,
+      "side": 1,
+      "x": 229.26,
+      "y": 124.84,
+      "id": 12,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 6,
+      "side": 0,
+      "x": 101.0,
+      "y": 146.6,
+      "id": 13,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 6,
+      "side": 1,
+      "x": 195.0,
+      "y": 146.6,
+      "id": 14,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 7,
+      "side": 0,
+      "x": 131.73,
+      "y": 148.9,
+      "id": 15,
+      "start": null,
+      "nutrient": true
+    },
+    {
+      "pair": 7,
+      "side": 1,
+      "x": 164.27,
+      "y": 148.9,
+      "id": 16,
+      "start": null,
+      "nutrient": true
+    },
+    {
+      "pair": 8,
+      "side": 0,
+      "x": 70.05,
+      "y": 159.78,
+      "id": 17,
+      "start": "blue",
+      "nutrient": false
+    },
+    {
+      "pair": 8,
+      "side": 1,
+      "x": 225.95,
+      "y": 159.78,
+      "id": 18,
+      "start": "red",
+      "nutrient": false
+    },
+    {
+      "pair": 9,
+      "side": 0,
+      "x": 114.71,
+      "y": 169.1,
+      "id": 19,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 9,
+      "side": 1,
+      "x": 181.29,
+      "y": 169.1,
+      "id": 20,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 10,
+      "side": 0,
+      "x": 131.11,
+      "y": 187.73,
+      "id": 21,
+      "start": null,
+      "nutrient": true
+    },
+    {
+      "pair": 10,
+      "side": 1,
+      "x": 164.89,
+      "y": 187.73,
+      "id": 22,
+      "start": null,
+      "nutrient": true
+    },
+    {
+      "pair": 11,
+      "side": 0,
+      "x": 79.75,
+      "y": 188.93,
+      "id": 23,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 11,
+      "side": 1,
+      "x": 216.25,
+      "y": 188.93,
+      "id": 24,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 12,
+      "side": 0,
+      "x": 106.58,
+      "y": 192.95,
+      "id": 25,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 12,
+      "side": 1,
+      "x": 189.42,
+      "y": 192.95,
+      "id": 26,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 13,
+      "side": 0,
+      "x": 130.1,
+      "y": 214.48,
+      "id": 27,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 13,
+      "side": 1,
+      "x": 165.9,
+      "y": 214.48,
+      "id": 28,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 14,
+      "side": 0,
+      "x": 107.41,
+      "y": 230.34,
+      "id": 29,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 14,
+      "side": 1,
+      "x": 188.59,
+      "y": 230.34,
+      "id": 30,
+      "start": null,
+      "nutrient": false
+    },
+    {
+      "pair": 15,
+      "side": 0,
+      "x": 132.47,
+      "y": 238.85,
+      "id": 31,
+      "start": "red",
+      "nutrient": false
+    },
+    {
+      "pair": 15,
+      "side": 1,
+      "x": 163.53,
+      "y": 238.85,
+      "id": 32,
+      "start": "blue",
+      "nutrient": false
+    }
+  ]
+}

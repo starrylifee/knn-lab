@@ -6,3 +6,11 @@ node_modules
 
 .vercel
 .env*
+
+# Local teaching materials and generated assets
+/수업자료/
+
+# Local test artifacts
+/tests/microbe-preview/
+/tests/microbe-api-live-result.json
+/tests/deploy-stage-path.txt

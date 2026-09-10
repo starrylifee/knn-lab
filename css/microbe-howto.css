@@ -1,0 +1,20 @@
+/* 게임 방법 안내 창: 화면 높이에 맞춰 스크롤 없이 한 화면 */
+.head-right{display:flex;gap:12px;align-items:center}
+.howto-btn{background:var(--purple);padding:8px 16px;min-height:40px;font-size:16px}
+.howto-hero{margin-top:22px;background:var(--purple);font-size:20px;padding:15px 26px}
+#howto{width:min(96vw,980px);max-width:none;height:min(94vh,860px);max-height:none;padding:18px 24px;border-radius:24px;display:flex;flex-direction:column;gap:10px;overflow:hidden;box-sizing:border-box}
+.howto-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.howto-head h2{margin:0;font-size:24px}
+.howto-dots{display:flex;gap:5px;flex-wrap:nowrap}
+.howto-dots button{flex:1;min-width:0;min-height:36px;padding:4px 4px;font-size:12.5px;font-weight:600;display:flex;gap:4px;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}
+.howto-dots button b{flex:none;font-size:12px;color:#7a8a80}
+.howto-dots button span{overflow:hidden;text-overflow:ellipsis}
+.howto-dots button.on{background:#eee0fb;border-color:var(--purple);color:var(--purple)}
+.howto-dots button.on b{color:var(--purple)}
+.howto-stage{flex:1;min-height:0;background:#fffcf5;border:2px solid #d5dfd7;border-radius:18px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.howto-stage svg{display:block;width:100%;height:100%}
+.howto-text{font-size:clamp(15px,2.2vh,21px);font-weight:700;line-height:1.5;margin:0;text-align:center;background:var(--mint);padding:10px 16px;border-radius:14px;min-height:calc(2 * 1.5em + 20px);display:flex;align-items:center;justify-content:center}
+.howto-nav{display:flex;gap:10px}
+.howto-nav button{flex:1;font-size:17px;min-height:44px}
+#howto-next{flex:2}
+@media(max-width:760px){#howto{padding:12px;height:auto;max-height:96vh}.howto-stage{flex:none;aspect-ratio:16/9}#howto-replay{flex:0 0 auto;padding:8px 12px}.howto-head h2{font-size:19px}.howto-dots button span{display:none}.howto-dots button{padding:4px 2px}.howto-btn{padding:6px 10px;font-size:14px}.howto-nav button{font-size:15px}}
