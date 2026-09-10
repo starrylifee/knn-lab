@@ -100,14 +100,14 @@ function renderStep(){const st=steps[step];$('howto-title').textContent=`${step+
  document.querySelectorAll('#howto-dots button').forEach((b,i)=>{b.classList.toggle('on',i===step);b.setAttribute('aria-current',i===step?'step':'false');});
  $('howto-prev').disabled=step===0;$('howto-next').textContent=step===steps.length-1?'다 봤어요!':'다음 ▶';
  play();}
-function play(){clearTimeout(loop);const stage=$('howto-stage');stage.replaceChildren();const s=scene();steps[step].draw(s);stage.append(s);try{s.setCurrentTime(0);}catch{}loop=setTimeout(()=>{if($('howto').open)play();},steps[step].dur*1000+1200);}
+function play(){clearTimeout(loop);const stage=$('howto-stage');stage.replaceChildren();const s=scene();steps[step].draw(s);stage.append(s);try{s.setCurrentTime(0);}catch{}loop=setTimeout(()=>{if($('howto').open)play();},(steps[step].dur*1000+1200)/F.getSpeed());}
 function go(n){step=Math.max(0,Math.min(steps.length-1,n));renderStep();}
 function open(){if(!layout.length)return;$('howto').showModal();go(0);localStorage.setItem('knn-microbe-howto','1');}
 function close(){clearTimeout(loop);$('howto').close();}
 function init(){const dots=$('howto-dots');steps.forEach((st,i)=>{const b=document.createElement('button');b.type='button';b.className='secondary';b.innerHTML=`<b>${i+1}</b><span>${st.title}</span>`;b.onclick=()=>go(i);dots.append(b);});
  $('howto-prev').onclick=()=>go(step-1);$('howto-next').onclick=()=>step===steps.length-1?close():go(step+1);$('howto-close').onclick=close;$('howto-replay').onclick=play;
  $('howto').addEventListener('close',()=>clearTimeout(loop));$('howto').addEventListener('keydown',e=>{if(e.key==='ArrowRight'||(e.key==='Enter'&&e.target.tagName!=='BUTTON')){e.preventDefault();go(step+1);}if(e.key==='ArrowLeft'){e.preventDefault();go(step-1);}});
- document.querySelectorAll('.howto-open').forEach(b=>b.onclick=open);}
+ document.querySelectorAll('.howto-open').forEach(b=>b.onclick=open);F.bindSpeedButtons();}
 fetch('js/microbe-layout.json').then(r=>r.json()).then(d=>{layout=d.sites;init();
  /* 처음 온 학생에게는 방 목록 화면에서 한 번 자동으로 보여 준다 */
  if(!localStorage.getItem('knn-microbe-howto')&&!localStorage.getItem('knn-microbe-room'))setTimeout(()=>{if(!$('lobby').hidden)open();},900);

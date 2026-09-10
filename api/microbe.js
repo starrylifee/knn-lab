@@ -4,6 +4,7 @@ const {getFirestore}=require('firebase-admin/firestore');
 const {getAuth}=require('firebase-admin/auth');
 const {randomBytes,createHmac}=require('node:crypto');
 const engine=require('../lib/microbe-engine');
+const bot=require('../lib/microbe-bot');
 const {access}=require('../lib/microbe-access');
 function db(){
   if(!getApps().length){
@@ -15,6 +16,8 @@ function db(){
 }
 function reject(message,status=409){throw Object.assign(new Error(message),{status});}
 function roomId(v){const n=Number(v);if(!Number.isInteger(n)||n<1||n>15)reject('방은 1~15번 중에서 골라 주세요.',400);return String(n);}
+// 'bot' = 컴퓨터와 1:1 개인 방(사용자마다 하나, microbeSolo/{uid}). 공용 15개 방과 분리된다.
+function locate(store,v,uid){if(v==='bot')return {id:'bot',ref:store.collection('microbeSolo').doc(uid),solo:true};const id=roomId(v);return {id,ref:store.collection('microbeRooms').doc(id),solo:false};}
 // Reset the stream on a Firestore transaction retry; clients never supply or see it.
 function randomStream(seed){let counter=0;return n=>{const limit=Math.floor(4294967296/n)*n;let x;do{x=createHmac('sha256',seed).update(String(counter++)).digest().readUInt32BE();}while(x>=limit);return x%n;};}
 function stale(r,now){return r.players.some(Boolean)&&Math.max(...r.seen)<now-10*60*1000;}
@@ -40,12 +43,26 @@ module.exports=async function(req,res){
    return res.json({rooms:snaps.map((snap,i)=>{const r=snap.exists?snap.data():engine.newRoom(String(i+1),now);const expired=stale(r,now);return {id:i+1,status:expired?'waiting':r.status,count:expired?0:r.players.filter(Boolean).length,ready:expired?0:r.ready.filter(Boolean).length,mine:!expired&&r.players.includes(uid)};})});
   }
   if(req.method==='GET'){
-   const ref=rooms.doc(roomId(req.query.room));
-   const result=await store.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)reject('빈방입니다. 다시 입장해 주세요.');const r=snap.data(),me=r.players.indexOf(uid);if(me<0)reject('이 방의 참가자가 아닙니다.',403);
+   const {ref,solo}=locate(store,req.query.room,uid),seed=randomBytes(32);
+   const result=await store.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)reject('빈방입니다. 다시 입장해 주세요.');let r=snap.data();const me=r.players.indexOf(uid);if(me<0)reject('이 방의 참가자가 아닙니다.',403);
+    if(solo){const before=r.version;r=bot.act(r,randomStream(seed),now,{watchMs:req.query.speed==='2'?bot.WATCH_MS/2:bot.WATCH_MS});if(r.version!==before){r.seen[me]=now;tx.set(ref,r);return engine.view(r,uid);}}
     if(now-r.seen[me]>15000){r.seen[me]=now;tx.set(ref,r);}return engine.view(r,uid);});
    return res.json(result);
   }
-  const body=req.body||{},id=roomId(body.room),ref=rooms.doc(id),seed=randomBytes(32);
+  const body=req.body||{},{id,ref,solo}=locate(store,body.room,uid),seed=randomBytes(32);
+  if(solo){
+   const result=await store.runTransaction(async tx=>{
+    const snap=await tx.get(ref);let r=snap.exists?snap.data():null;
+    if(body.type==='join'){if(!r||!r.bot||r.players[0]!==uid||stale(r,now))r=bot.newBotRoom('bot',uid,now);r.seen[0]=now;tx.set(ref,r);return engine.view(r,uid);}
+    if(!r||r.players[0]!==uid)reject('컴퓨터 방이 없어요. 다시 들어가 주세요.',403);
+    if(body.type==='leave'){tx.delete(ref);return {left:true};}
+    if(body.type==='ready'&&r.status==='playing')return engine.view(r,uid);
+    const random=randomStream(seed);
+    r=engine.apply(r,uid,{type:body.type,version:body.type==='ready'?r.version:body.version,site:body.site,cardId:body.cardId},random,now);
+    r=bot.act(r,random,now);tx.set(ref,r);return engine.view(r,uid);
+   });
+   return res.json(result);
+  }
   const result=await store.runTransaction(async tx=>{
    const [snap,ms]=await Promise.all([tx.get(ref),tx.get(member)]);let r=snap.exists?snap.data():engine.newRoom(id,now);
    if(body.type==='join'){

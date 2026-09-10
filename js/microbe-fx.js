@@ -2,7 +2,9 @@
    좌표 단위는 부모 요소의 단위를 그대로 따른다(게임판 = 실물 mm). */
 window.MicrobeFX=(()=>{'use strict';
 const NS='http://www.w3.org/2000/svg',INK='#293e51',PURPLE='#7857a3',RED='#c34d48',FONT='"Malgun Gothic",system-ui,sans-serif';
-function el(tag,attrs={},parent=null,text=null){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(text!==null)n.textContent=text;if(parent)parent.append(n);return n;}
+let speed=1;try{speed=Number(localStorage.getItem('knn-microbe-speed'))||1;}catch{}
+const TIMED=/^(animate|set|animateTransform)$/;
+function el(tag,attrs={},parent=null,text=null){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,(TIMED.test(tag)&&(k==='begin'||k==='dur')&&typeof v==='string'&&/^[\d.]+s$/.test(v))?(parseFloat(v)/speed).toFixed(3)+'s':v);if(text!==null)n.textContent=text;if(parent)parent.append(n);return n;}
 function txt(parent,t,x,y,size=16,o={}){return el('text',{x,y,'font-size':size,'font-family':FONT,'font-weight':o.bold?800:400,fill:o.fill||INK,'text-anchor':o.anchor||'start',...(o.attrs||{})},parent,t);}
 function rect(parent,x,y,w,h,fill,stroke,rx=12,extra={}){return el('rect',{x,y,width:w,height:h,rx,fill,stroke:stroke||'none','stroke-width':2,...extra},parent);}
 function showAt(node,t,slide=true,dist=10){node.setAttribute('opacity',0);el('set',{attributeName:'opacity',to:1,begin:t+'s',fill:'freeze'},node);if(slide)el('animateTransform',{attributeName:'transform',type:'translate',from:'0 '+dist,to:'0 0',begin:t+'s',dur:'.35s',fill:'freeze',calcMode:'spline',keySplines:'.2 .8 .2 1'},node);return node;}
@@ -47,6 +49,11 @@ function playVerdict(svg,layout,v){const site=layout.find(s=>s.id===v.site),by=O
  if(v.card==='nutrient'){const nb=pill(overlay,site.x,site.y+15,50,10,'영양분 카드 +1 포함!','#dcefe6','#287760',5.2);pop(nb,t+.4);t+=.4;}
  if(site.nutrient&&v.points>=2){const gb=pill(overlay,site.x,site.y+(v.card==='nutrient'?26:15),44,10,'금색 자리 2점!','#fff0c3','#9a741d',5.2);pop(gb,t+.4);t+=.4;}
  if(v.card==='retry'&&!v.rerolled){const rb=pill(overlay,148,60,90,12,'마음에 안 들면 한 번 더 뽑기!',PURPLE,'white',6);pop(rb,t+.5);t+=.5;}
- return t+1.0;}
-return {el,txt,rect,showAt,hideAt,pop,fly,microbe,sheet,dice,scan,badge,ballot,pill,playVerdict,INK,PURPLE,RED};
+ return (t+1.0)/speed;}
+/* 배속 버튼(.speed-toggle)들을 같은 설정으로 묶는다 */
+function getSpeed(){return speed;}
+function setSpeed(v){speed=v===2?2:1;try{localStorage.setItem('knn-microbe-speed',String(speed));}catch{}syncSpeedButtons();}
+function syncSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{b.textContent=speed===2?'⚡ 모션 2배속':'모션 1배속';b.classList.toggle('on',speed===2);b.setAttribute('aria-pressed',String(speed===2));});}
+function bindSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{b.onclick=()=>setSpeed(speed===2?1:2);});syncSpeedButtons();}
+return {el,txt,rect,showAt,hideAt,pop,fly,microbe,sheet,dice,scan,badge,ballot,pill,playVerdict,getSpeed,setSpeed,bindSpeedButtons,INK,PURPLE,RED};
 })();
