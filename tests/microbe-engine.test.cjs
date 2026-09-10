@@ -34,3 +34,8 @@ test('one open card and two hidden; hidden card must be flipped first, flipped c
  assert.equal(r.game.flipped,null);assert.ok(!r.game.cards.some(c=>c.id===used));assert.equal(r.game.cards.filter(c=>c.open).length,1);assert.equal(r.game.cards.length,3);assert.equal(r.game.cards[2].open,false);
  const next=r.players[E.actorIndex(r)];r=E.apply(r,next,move(r),rng);r=E.apply(r,next,{type:'confirm',version:r.version},rng);assert.equal(r.game.cards.filter(c=>c.open).length,1);
 });
+test('rooms created before hidden cards (no open flag) are treated as first card open',()=>{
+ let r=start();r.game.cards=r.game.cards.map(({id,type})=>({id,type}));const actor=r.players[E.actorIndex(r)];
+ const v=E.view(r,actor);assert.deepEqual(v.game.cards.map(c=>c.open),[true,false,false]);assert.equal(v.game.cards[0].type,r.game.cards[0].type);
+ r=E.apply(r,actor,{type:'choose',version:r.version,site:r.game.candidates[0],cardId:r.game.cards[0].id},rng);assert.equal(r.game.phase,'reveal');assert.equal(r.game.cards[0].open,true);
+});
