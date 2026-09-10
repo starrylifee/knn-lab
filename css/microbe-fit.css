@@ -1,0 +1,69 @@
+/* 한 화면 배치: 방 목록·게임 화면 모두 기본 컴퓨터 화면(1366×768 이상)에서 스크롤 없이 보이게 */
+header{padding:14px 24px}
+main{padding:0 24px 24px}
+.howto-btn,.howto-open,#leave,.speed-toggle{white-space:nowrap}
+
+/* 방 목록 */
+.lobby-hero{display:flex;align-items:center;gap:24px;padding:20px 30px;border-radius:22px;background:var(--mint)}
+.lobby-hero .hero-text{flex:1;min-width:0}
+.lobby-hero h1{font-size:clamp(24px,3vw,34px);margin:6px 0 4px}
+.lobby-hero p{margin:0;font-size:15px;line-height:1.5}
+.lobby-hero .how{margin-top:12px;gap:8px}
+.lobby-hero .how span{padding:7px 12px;font-size:14px}
+.lobby-hero .howto-hero{margin:0;flex:none;font-size:18px;line-height:1.35;padding:12px 26px}
+.solo{margin:12px 0 6px}
+.room.bot{min-height:0;padding:10px 18px}.room.bot strong{font-size:19px}
+#lobby h2{font-size:18px;margin:8px 0}
+.rooms{grid-template-columns:repeat(5,1fr);gap:10px}
+.room{min-height:clamp(64px,11vh,120px);padding:10px 14px;gap:3px;border-radius:12px;justify-content:center}
+.room strong{font-size:19px}.room span{font-size:13px}
+
+/* 게임 화면: 세로로 꽉 채우고, 게임판은 남는 높이에 맞춰 줄어든다 */
+body.in-match{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body.in-match header{padding:10px 24px;flex:none;width:100%;max-width:1280px}
+body.in-match main{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 24px 12px;width:100%}
+#match{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.match-top{gap:14px;flex:none}
+.match-title{flex:none}.match-title h1{font-size:20px;margin:2px 0 0}
+.match-top .status{flex:1;min-width:0;margin:0;padding:10px 16px;font-size:18px}
+.match-top .actions{flex:none}.match-top .actions button{flex:none;padding:10px 14px;min-height:42px}
+.play-grid{flex:1;min-height:0;grid-template-columns:minmax(0,1fr) 450px;gap:16px;align-items:stretch}
+.board-wrap{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px;padding:12px 16px;min-height:0}
+#board{width:100%;height:100%;min-height:0}
+.board-caption{font-size:15px}
+.hint{font-size:13px}
+aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.scores{margin:0;gap:10px;flex:none}.score{padding:8px 14px;font-size:15px}.score strong{font-size:22px}
+.panel{margin:0;padding:12px 14px;flex:none}
+#game-panel{display:flex;flex-direction:column;gap:8px}
+.card-hint{margin:0;font-size:14px;color:#60766a;line-height:1.45}
+.cards{--ch:clamp(130px,26vh,210px);margin:0;gap:8px;justify-content:center;perspective:700px}
+.card{width:auto;flex:none;border-radius:8px}
+.card img{height:var(--ch);width:auto}
+.card-detail{min-height:0;font-size:14px;padding:8px 10px;line-height:1.5}
+.candidate-buttons{margin:0}.candidate-buttons button{padding:8px;font-size:16px;min-height:42px}
+.verdict{margin:0;padding:10px 12px;font-size:14px;line-height:1.5}
+#roll,#confirm,#reroll{min-height:44px;padding:10px 14px}
+.aside-foot{display:flex;gap:8px;flex:none}.aside-foot details{flex:1;min-width:0}
+.panel.slim{padding:8px 14px}.panel.slim summary{font-size:14px}
+.panel.slim .history,.panel.slim ul{max-height:22vh;overflow:auto;margin:8px 0 0;font-size:13px}
+.history{grid-template-columns:1fr;gap:3px}
+
+/* 뒤집힌 카드(히든카드)와 뒤집는 모션 */
+@keyframes flipOut{from{transform:rotateY(0)}to{transform:rotateY(90deg)}}
+@keyframes flipIn{from{transform:rotateY(-90deg)}to{transform:rotateY(0)}}
+.card.flip-out{animation:flipOut .28s ease-in forwards}
+.card.flip-in{animation:flipIn .32s ease-out}
+.card.hidden-card:hover:enabled{filter:brightness(1.08);transform:translateY(-2px)}
+.card.hidden-card:disabled{filter:saturate(.6)}
+.card.locked:disabled{opacity:.4;filter:none}
+.card.flipped.selected{border-color:var(--purple);box-shadow:0 0 0 2px #e6dcf5}
+
+@media(max-width:1000px){.play-grid{grid-template-columns:minmax(0,1fr) 340px}.rooms{grid-template-columns:repeat(5,1fr)}.match-top .status{font-size:15px}}
+@media(max-width:760px){
+ body.in-match{height:auto;overflow:auto;display:block}
+ #match{display:block}.play-grid{grid-template-columns:1fr}.match-top{flex-wrap:wrap}.match-top .status{flex-basis:100%;order:3}
+ .board-wrap{display:block}#board{height:auto}
+ .lobby-hero{flex-direction:column;align-items:stretch;padding:18px}.rooms{grid-template-columns:repeat(3,1fr)}.room{min-height:0}
+ aside{overflow:visible}.cards{--ch:150px}
+}

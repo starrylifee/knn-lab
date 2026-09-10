@@ -23,3 +23,5 @@
 .solo{margin:18px 0 8px}.room.bot{width:100%;min-height:0;flex-direction:row;align-items:center;gap:18px;background:#f4effa;border-color:var(--purple)}.room.bot strong{font-size:22px}.room.bot span:last-child{margin-left:auto;font-weight:800;color:var(--purple)}
 @media(max-width:760px){.room.bot{flex-wrap:wrap;gap:8px}.room.bot span:last-child{margin-left:0}}
 @media(max-width:760px){#howto{padding:12px;height:auto;max-height:96vh}.howto-stage{flex:none;aspect-ratio:16/9}#howto-replay{flex:0 0 auto;padding:8px 12px}.howto-head h2{font-size:19px}.howto-dots button span{display:none}.howto-dots button{padding:4px 2px}.howto-btn{padding:6px 10px;font-size:14px}.howto-nav button{font-size:15px}}
+
+.howto-stage{transition:opacity .4s ease}.howto-stage.fade{opacity:0}

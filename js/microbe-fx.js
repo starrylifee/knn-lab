@@ -2,14 +2,17 @@
    좌표 단위는 부모 요소의 단위를 그대로 따른다(게임판 = 실물 mm). */
 window.MicrobeFX=(()=>{'use strict';
 const NS='http://www.w3.org/2000/svg',INK='#293e51',PURPLE='#7857a3',RED='#c34d48',FONT='"Malgun Gothic",system-ui,sans-serif';
-let speed=1;try{speed=Number(localStorage.getItem('knn-microbe-speed'))||1;}catch{}
+/* 배속은 게임(game)과 게임 방법 안내(howto)를 따로 기억한다. 안내는 2배속이 기본. */
+const KEYS={game:'knn-microbe-speed',howto:'knn-microbe-howto-speed'},pref={game:1,howto:2};
+for(const k in KEYS){try{const v=Number(localStorage.getItem(KEYS[k]));if(v===1||v===2)pref[k]=v;}catch{}}
+let speed=pref.game;
 const TIMED=/^(animate|set|animateTransform)$/;
 function el(tag,attrs={},parent=null,text=null){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,(TIMED.test(tag)&&(k==='begin'||k==='dur')&&typeof v==='string'&&/^[\d.]+s$/.test(v))?(parseFloat(v)/speed).toFixed(3)+'s':v);if(text!==null)n.textContent=text;if(parent)parent.append(n);return n;}
 function txt(parent,t,x,y,size=16,o={}){return el('text',{x,y,'font-size':size,'font-family':FONT,'font-weight':o.bold?800:400,fill:o.fill||INK,'text-anchor':o.anchor||'start',...(o.attrs||{})},parent,t);}
 function rect(parent,x,y,w,h,fill,stroke,rx=12,extra={}){return el('rect',{x,y,width:w,height:h,rx,fill,stroke:stroke||'none','stroke-width':2,...extra},parent);}
 function showAt(node,t,slide=true,dist=10){node.setAttribute('opacity',0);el('set',{attributeName:'opacity',to:1,begin:t+'s',fill:'freeze'},node);if(slide)el('animateTransform',{attributeName:'transform',type:'translate',from:'0 '+dist,to:'0 0',begin:t+'s',dur:'.35s',fill:'freeze',calcMode:'spline',keySplines:'.2 .8 .2 1'},node);return node;}
 function hideAt(node,t,fade=0){if(fade){el('animate',{attributeName:'opacity',to:0,begin:t+'s',dur:fade+'s',fill:'freeze'},node);}else el('set',{attributeName:'opacity',to:0,begin:t+'s',fill:'freeze'},node);return node;}
-function pop(node,t){node.setAttribute('opacity',0);el('set',{attributeName:'opacity',to:1,begin:t+'s',fill:'freeze'},node);el('animateTransform',{attributeName:'transform',type:'scale',from:'0 0',to:'1 1',begin:t+'s',dur:'.45s',fill:'freeze',calcMode:'spline',keySplines:'.2 1.4 .4 1'},node);node.setAttribute('style','transform-origin:center;transform-box:fill-box');return node;}
+function pop(node,t){node.setAttribute('opacity',0);el('set',{attributeName:'opacity',to:1,begin:t+'s',fill:'freeze'},node);el('animateTransform',{attributeName:'transform',type:'scale',values:'0 0;1.12 1.12;1 1',keyTimes:'0;.7;1',begin:t+'s',dur:'.45s',fill:'freeze',calcMode:'spline',keySplines:'.2 .8 .4 1;.4 0 .6 1'},node);node.setAttribute('style','transform-origin:center;transform-box:fill-box');return node;}
 function fly(node,from,to,t,dur=.7){el('animateTransform',{attributeName:'transform',type:'translate',from:'0 0',to:`${to[0]-from[0]} ${to[1]-from[1]}`,begin:t+'s',dur:dur+'s',fill:'freeze',calcMode:'spline',keySplines:'.3 0 .2 1'},node);return node;}
 function microbe(parent,s,color){const x=s.x,y=s.y,fill=color==='red'?'#f29583':'#79bfdc',stroke=color==='red'?'#b74f48':'#347c9d';const g=el('g',{},parent);if(color==='red')el('circle',{cx:x,cy:y,r:5,fill,stroke,'stroke-width':.6},g);else el('polygon',{points:`${x},${y-5.7} ${x-5.4},${y+4.5} ${x+5.4},${y+4.5}`,fill,stroke,'stroke-width':.6},g);for(const dx of[-1.6,1.6])el('circle',{cx:x+dx,cy:y,r:.5,fill:INK},g);el('path',{d:`M ${x-1},${y+1.5} Q ${x},${y+3} ${x+1},${y+1.5}`,stroke:INK,'stroke-width':.45,fill:'none'},g);return g;}
 
@@ -29,12 +32,13 @@ function ballot(parent,from,to,color,t,scale=1,dur=.7){const [x,y]=from,g=el('g'
 function pill(parent,x,y,w,h,text,fill,color,size){const g=el('g',{},parent);rect(g,x-w/2,y-h/2,w,h,fill,'none',h/2);txt(g,text,x,y+size*.36,size,{bold:true,fill:color,anchor:'middle'});return g;}
 
 /* 실제 게임판 위 한 차례의 결과 모션. 좌표계는 게임판 viewBox(37 47 222 222). 총 길이(초)를 돌려준다 */
-function playVerdict(svg,layout,v){const site=layout.find(s=>s.id===v.site),by=Object.fromEntries(layout.map(s=>[s.id,s]));
+function playVerdict(svg,layout,v){return run('game',()=>verdictScene(svg,layout,v));}
+function verdictScene(svg,layout,v){const site=layout.find(s=>s.id===v.site),by=Object.fromEntries(layout.map(s=>[s.id,s]));
  const neighbors=v.neighbors.map(id=>({...by[id],color:v.board[id],d:Math.hypot(by[id].x-site.x,by[id].y-site.y)}));const k=v.k;try{svg.pauseAnimations();svg.setCurrentTime(0);svg.unpauseAnimations();}catch{}const overlay=el('g',{'class':'fx'},svg);
  let t=0;
  if(v.rerolled){const again=pill(overlay,148,60,70,14,'한 번 더 뽑기!',PURPLE,'white',7.5);pop(again,0);hideAt(again,1.6,.3);}
- dice(overlay,214,52,36,k,{begin:t});t+=1.5;
- sheet(overlay,site.x,site.y,{from:[232-site.x,52-site.y],begin:t,dur:1});
+ dice(overlay,42,50,34,k,{begin:t});t+=1.5;   // 주사위는 게임판 왼쪽 위 빈 구석(관찰판이 들어오는 오른쪽 위와 겹치지 않게)
+ sheet(overlay,site.x,site.y,{from:[236-site.x,54-site.y],begin:t,dur:1});
  const label=pill(overlay,222,98,72,11,`가까운 ${k}마리에게 물어봐요`,'#fff3d7',INK,5.4);showAt(label,t+.7);t+=1.2;
  const reach=(neighbors[neighbors.length-1]?.d||20)+4,sdur=k===1?.7:1.2;scan(overlay,site.x,site.y,reach,t,sdur);
  neighbors.forEach((n,i)=>badge(overlay,n.x+7,n.y-7,i+1,t+sdur*(n.d/reach)));t+=sdur+.3;
@@ -50,10 +54,11 @@ function playVerdict(svg,layout,v){const site=layout.find(s=>s.id===v.site),by=O
  if(site.nutrient&&v.points>=2){const gb=pill(overlay,site.x,site.y+(v.card==='nutrient'?26:15),44,10,'금색 자리 2점!','#fff0c3','#9a741d',5.2);pop(gb,t+.4);t+=.4;}
  if(v.card==='retry'&&!v.rerolled){const rb=pill(overlay,148,60,90,12,'마음에 안 들면 한 번 더 뽑기!',PURPLE,'white',6);pop(rb,t+.5);t+=.5;}
  return (t+1.0)/speed;}
-/* 배속 버튼(.speed-toggle)들을 같은 설정으로 묶는다 */
-function getSpeed(){return speed;}
-function setSpeed(v){speed=v===2?2:1;try{localStorage.setItem('knn-microbe-speed',String(speed));}catch{}syncSpeedButtons();}
-function syncSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{b.textContent=speed===2?'⚡ 모션 2배속':'모션 1배속';b.classList.toggle('on',speed===2);b.setAttribute('aria-pressed',String(speed===2));});}
-function bindSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{b.onclick=()=>setSpeed(speed===2?1:2);});syncSpeedButtons();}
-return {el,txt,rect,showAt,hideAt,pop,fly,microbe,sheet,dice,scan,badge,ballot,pill,playVerdict,getSpeed,setSpeed,bindSpeedButtons,INK,PURPLE,RED};
+/* 배속 버튼(.speed-toggle[data-scope=game|howto]). 장면을 그리는 동안 run(scope, fn)으로 그 배속을 적용한다 */
+function getSpeed(scope='game'){return pref[scope]||1;}
+function setSpeed(v,scope='game'){pref[scope]=v===2?2:1;try{localStorage.setItem(KEYS[scope],String(pref[scope]));}catch{}syncSpeedButtons();}
+function run(scope,fn){const prev=speed;speed=getSpeed(scope);try{return fn();}finally{speed=prev;}}
+function syncSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{const on=getSpeed(b.dataset.scope||'game')===2;b.textContent=on?'⚡ 모션 2배속':'모션 1배속';b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});}
+function bindSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{const scope=b.dataset.scope||'game';b.onclick=()=>setSpeed(getSpeed(scope)===2?1:2,scope);});syncSpeedButtons();}
+return {el,txt,rect,showAt,hideAt,pop,fly,microbe,sheet,dice,scan,badge,ballot,pill,playVerdict,getSpeed,setSpeed,run,bindSpeedButtons,INK,PURPLE,RED};
 })();

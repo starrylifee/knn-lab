@@ -4,6 +4,7 @@ const $=id=>document.getElementById(id),names={basic:'기본 키우기',nutrient
 let room=null,current=null,layout=[],busy=false,selectedSite=null,selectedCard=null,timer=null,lastError=0;
 let polling=false,allowed=false,accessCheck=false,nextCheck=0,accessCode=sessionStorage.getItem('knn-microbe-access')||'';
 let fxUntil=0,fxInit=false,fxTimer=null;const fxPlayed=new Set();let roomsSig=null;
+let flipping=null;const seenFlipped=new Set(); // 뒤집는 중인 카드 id / 이미 뒤집힘 모션을 보여준 카드 id
 const svgNS='http://www.w3.org/2000/svg';
 function error(e){if(Date.now()-lastError<1500)return;lastError=Date.now();$('error').textContent=e.message||'연결을 다시 확인해 주세요.';$('error').hidden=false;setTimeout(()=>$('error').hidden=true,5500);}
 async function api(type,data={}){await authReady;const token=await fbAuth.currentUser.getIdToken();const response=await fetch('/api/microbe'+(type==='get'?(data.room?'?room='+data.room+(data.room==='bot'&&window.MicrobeFX?'&speed='+window.MicrobeFX.getSpeed():''):''):''),{method:type==='get'?'GET':'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','X-Microbe-Access':accessCode},...(type==='get'?{}:{body:JSON.stringify({type,...data})})});const result=await response.json();if(result.code==='HOURS_CLOSED'){allowed=false;nextCheck=result.nextChange;render();}if(!response.ok)throw Object.assign(new Error(result.error||'다시 시도해 주세요.'),{status:response.status});return result;}
@@ -34,7 +35,7 @@ function draw(o={}){const svg=$('board');svg.replaceChildren();shape('circle',{c
   const pick=()=>{if(candidate&&selecting()){selectedSite=s.id;render();}};group.onclick=pick;group.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}};
  }
 }
-function render(){$('hours-gate').hidden=allowed;const active=allowed&&!!room&&!!current;$('lobby').hidden=!allowed||active;$('match').hidden=!active;if(!active)return;const r=current,g=r.game;const me=r.me,other=1-me;const fx=Date.now()<fxUntil;
+function render(){$('hours-gate').hidden=allowed;const active=allowed&&!!room&&!!current;$('lobby').hidden=!allowed||active;$('match').hidden=!active;document.body.classList.toggle('in-match',active);if(!active)return;const r=current,g=r.game;const me=r.me,other=1-me;const fx=Date.now()<fxUntil;
  const rival=r.bot?'컴퓨터':'상대';
  $('room-label').textContent=r.bot?'컴퓨터와 1:1 · 내 실험실':`${room}번 실험실 · ${r.seats.filter(Boolean).length}/2명`;
  $('scores').replaceChildren();for(let i=0;i<2;i++){const color=r.redIndex===null?'':i===r.redIndex?'red':'blue';const box=document.createElement('div');box.className='score '+color+(r.status==='playing'&&r.actorIndex===i?' active':'');box.innerHTML=`${i===me?'나':rival} ${color?'· '+colors[color]:''}<strong>${r.totals[i]}점</strong>`;$('scores').append(box);}
@@ -49,9 +50,17 @@ function render(){$('hours-gate').hidden=allowed;const active=allowed&&!!room&&!
  $('status').textContent=message;$('ready-title').textContent=r.status==='finished'?'다시 할까요?':r.status==='between'?'2판 준비':'게임 준비';$('ready-note').textContent=r.bot?'게임 준비를 누르면 컴퓨터도 바로 준비해요.':r.ready[me]?'나는 준비 완료! 상대를 기다려요.':r.ready[other]?'상대는 준비했어요. 준비되면 눌러 주세요.':'두 사람 다 준비해야 시작해요.';$('ready').disabled=busy||!r.seats.every(Boolean)||r.ready[me];$('ready').textContent=r.ready[me]?'준비 완료':'게임 준비';
  $('round-label').textContent=g?`${r.leg}/2판 · ${g.turn}/12차례`:'게임 준비';$('my-color').textContent=r.redIndex===null?'':`나는 ${me===r.redIndex?'빨강':'파랑'}팀`;
  $('board-hint').textContent=g&&g.phase==='choose'?(mineTurn()?`보라색 자리 ${g.candidates.join(', ')}번 중에서 골라요. `:`${rival}가 보라색 자리 ${g.candidates.join(', ')}번 중 하나를 고르는 중이에요. `)+(g.turn>=7?'지금부터 금색(★) 자리는 2점!':'지금은 금색(★) 자리도 1점이에요.'):'보라색 선으로 이어진 미생물이 투표한 이웃이에요.';
- $('cards').replaceChildren();if(g)for(const c of g.cards){const button=document.createElement('button');button.className='card'+(selectedCard===c.id||g.pending?.card.id===c.id?' selected':'');button.disabled=!selecting();button.setAttribute('aria-label',names[c.type]);button.setAttribute('aria-pressed',String(selectedCard===c.id));button.innerHTML=`<img src="img/microbe/${c.type}.svg" alt="${names[c.type]} 카드">`;button.onclick=()=>{selectedCard=c.id;render();};$('cards').append(button);}
+ if(g?.flipped)selectedCard=g.flipped;   // 뒤집은 카드는 이번 차례에 꼭 쓴다
+ $('card-hint').textContent=g?.phase!=='choose'?'이번 차례에 쓴 카드예요.':g?.flipped?'뒤집은 카드로 해요! 이제 자리 1곳을 골라요.':'보이는 카드를 쓰거나, 뒤집힌 카드를 눌러 뒤집어 봐요. 뒤집은 카드는 꼭 써요!';
+ $('cards').replaceChildren();if(g)for(const c of g.cards){const button=document.createElement('button'),hidden=!!c.hidden,locked=!!g.flipped&&c.id!==g.flipped;
+  button.className='card'+(hidden?' hidden-card':'')+(c.flipped?' flipped':'')+(!hidden&&(selectedCard===c.id||g.pending?.card.id===c.id)?' selected':'')+(locked?' locked':'');
+  if(flipping===c.id){if(hidden)button.classList.add('flip-out');else{button.classList.add('flip-in');seenFlipped.add(c.id);setTimeout(()=>{flipping=null;},400);}}
+  else if(c.flipped&&!seenFlipped.has(c.id)){seenFlipped.add(c.id);button.classList.add('flip-in');}
+  button.disabled=!selecting()||locked||(hidden&&!!g.flipped);button.setAttribute('aria-label',hidden?'뒤집힌 카드 (누르면 뒤집어요)':names[c.type]+(c.flipped?' (뒤집은 카드)':''));button.setAttribute('aria-pressed',String(!hidden&&selectedCard===c.id));
+  button.innerHTML=hidden?'<img src="img/microbe/back.svg" alt="뒤집힌 카드">':`<img src="img/microbe/${c.type}.svg" alt="${names[c.type]} 카드">`;
+  button.onclick=()=>{if(hidden){flipping=c.id;action('flip',{cardId:c.id});}else{selectedCard=c.id;render();}};$('cards').append(button);}
  const picked=g?.pending?.card||g?.cards.find(c=>c.id===selectedCard);
- $('card-detail').textContent=picked?`${names[picked.type]} · ${effects[picked.type]}`:'카드를 누르면 사용 방법을 크게 볼 수 있어요.';
+ $('card-detail').textContent=picked?`${picked.flipped?'뒤집은 카드예요! ':''}${names[picked.type]} · ${effects[picked.type]}`:'카드를 누르면 사용 방법을 크게 볼 수 있어요. 뒤집힌 카드는 눌러야 뭔지 알 수 있어요.';
  $('candidates').replaceChildren();for(const id of g?.phase==='choose'?g.candidates:[]){const b=document.createElement('button');b.className='secondary'+(selectedSite===id?' chosen':'');b.textContent=`${id}번`;b.disabled=!selecting();b.setAttribute('aria-pressed',String(selectedSite===id));b.onclick=()=>{selectedSite=id;render();};$('candidates').append(b);}
  $('roll').hidden=g?.phase!=='choose';$('roll').disabled=!selecting()||selectedSite===null||!selectedCard;
  $('confirm').hidden=g?.phase!=='reveal';$('confirm').disabled=busy||!mineTurn()||fx;$('reroll').hidden=!(g?.phase==='reveal'&&g.pending?.card.type==='retry'&&!g.pending.rerolled);$('reroll').disabled=busy||!mineTurn()||fx;

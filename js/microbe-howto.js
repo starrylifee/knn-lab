@@ -42,12 +42,20 @@ const steps=[
   const friend=el('g',{},s);rect(friend,170,215,300,34,'#fff3d7','none',10);txt(friend,'상대도 준비 완료!  ✓',320,238,16,{bold:true,anchor:'middle'});showAt(friend,3.2);
   const st=statusBar(s,285,'게임 시작! 내 차례예요.');showAt(st,4.2);
   cursor(s,[[560,330,0],[340,178,1.1],[340,178,1.6],[340,178,6]],[1.5]);}},
- {title:'카드 고르기',text:'카드 3장 중에서 1장을 골라요. 카드를 누르면 설명이 나와요.',dur:6,draw(s){
-  const p=el('g',{},s);rect(p,110,18,420,326,'white','#d5dfd7',18);txt(p,'이번 차례 카드',135,54,20,{bold:true});txt(p,'카드 1장을 고르고, 자리 1곳을 골라요.',135,80,14,{fill:'#607766'});
-  ['basic','nutrient','retry'].forEach((t,i)=>el('image',{href:`img/microbe/${t}.svg`,x:135+i*128,y:96,width:114,height:199.5},p));
-  const sel=el('rect',{x:131,y:92,width:122,height:207.5,rx:8,fill:'none',stroke:'#9a741d','stroke-width':4},p);showAt(sel,1.6,false);
-  const d=el('g',{},p);rect(d,135,306,370,30,'#eef5ef','none',8);txt(d,'기본 키우기 · 자리를 고르고 K를 뽑아요.',320,326,14,{bold:true,anchor:'middle'});showAt(d,1.7);
-  cursor(s,[[580,330,0],[200,200,1.1],[200,200,1.6],[200,200,6]],[1.5]);}},
+ {title:'카드 고르기',text:'카드 3장 중 1장만 보여요. 보이는 카드를 쓰거나, 뒤집힌 카드를 눌러 뒤집어 봐요. 뒤집은 카드는 꼭 써야 해요!',dur:7,draw(s){
+  const p=el('g',{},s);rect(p,110,18,420,326,'white','#d5dfd7',18);txt(p,'이번 차례 카드',135,54,20,{bold:true});txt(p,'보이는 카드를 쓰거나, 뒤집힌 카드를 뒤집어 봐요.',135,80,14,{fill:'#607766'});
+  const X=i=>135+i*128,Y=96,W=114,H=199.5;
+  el('image',{href:'img/microbe/basic.svg',x:X(0),y:Y,width:W,height:H},p);
+  el('image',{href:'img/microbe/back.svg',x:X(1),y:Y,width:W,height:H},p);
+  /* 3번째 카드: 뒷면이 세로축으로 접히듯 사라지고 앞면(한 번 더)이 펼쳐진다 */
+  const cx=X(2)+W/2,back=el('g',{},p),front=el('g',{},p);
+  el('image',{href:'img/microbe/back.svg',x:X(2),y:Y,width:W,height:H},back);el('image',{href:'img/microbe/retry.svg',x:X(2),y:Y,width:W,height:H},front);
+  const flipAt=1.7;el('animateTransform',{attributeName:'transform',type:'scale',from:'1 1',to:'0 1',begin:flipAt+'s',dur:'.3s',fill:'freeze',calcMode:'spline',keySplines:'.4 0 1 1'},back);back.setAttribute('style',`transform-origin:${cx}px ${Y+H/2}px`);
+  front.setAttribute('transform','scale(0 1)');front.setAttribute('style',`transform-origin:${cx}px ${Y+H/2}px`);el('animateTransform',{attributeName:'transform',type:'scale',from:'0 1',to:'1 1',begin:(flipAt+.3)+'s',dur:'.3s',fill:'freeze',calcMode:'spline',keySplines:'0 0 .6 1'},front);
+  const sel=el('rect',{x:X(2)-4,y:Y-4,width:W+8,height:H+8,rx:8,fill:'none',stroke:PURPLE,'stroke-width':4},p);showAt(sel,flipAt+.6,false);
+  const dim=el('g',{},p);rect(dim,X(0)-2,Y-2,W+4,H+4,'#ffffff99','none',6);rect(dim,X(1)-2,Y-2,W+4,H+4,'#ffffff99','none',6);showAt(dim,flipAt+.6,false);
+  const d=el('g',{},p);rect(d,135,306,370,30,'#eef5ef','none',8);txt(d,'뒤집은 카드예요! 한 번 더 · 이 카드로 해요.',320,326,14,{bold:true,anchor:'middle'});showAt(d,flipAt+.7);
+  cursor(s,[[580,330,0],[cx,200,1.2],[cx,200,flipAt,],[cx,200,7]],[flipAt-.1]);}},
  {title:'자리 고르기',text:'보라색 동그라미 3곳 중 1곳을 골라요. 여기에 새 미생물이 태어나요.',dur:6,draw(s){
   const b=board(s,30,20,320,{board:SAMPLE,candidates:CANDS,pulse:true});
   const p=panel(s,'자리 고르기');txt(p,'보라색 자리 25, 3, 28번',400,96,14);txt(p,'중에서 골라요.',400,116,14);
@@ -100,7 +108,9 @@ function renderStep(){const st=steps[step];$('howto-title').textContent=`${step+
  document.querySelectorAll('#howto-dots button').forEach((b,i)=>{b.classList.toggle('on',i===step);b.setAttribute('aria-current',i===step?'step':'false');});
  $('howto-prev').disabled=step===0;$('howto-next').textContent=step===steps.length-1?'다 봤어요!':'다음 ▶';
  play();}
-function play(){clearTimeout(loop);const stage=$('howto-stage');stage.replaceChildren();const s=scene();steps[step].draw(s);stage.append(s);try{s.setCurrentTime(0);}catch{}loop=setTimeout(()=>{if($('howto').open)play();},(steps[step].dur*1000+1200)/F.getSpeed());}
+/* 한 단계 모션을 다 보여 주면 화면을 잠깐 어둡게 전환했다가 처음부터 다시 튼다(무한 반복). 안내는 기본 2배속 */
+function play(){clearTimeout(loop);const stage=$('howto-stage');stage.classList.remove('fade');stage.replaceChildren();const s=F.run('howto',()=>{const s=scene();steps[step].draw(s);return s;});stage.append(s);try{s.setCurrentTime(0);}catch{}
+ loop=setTimeout(()=>{if(!$('howto').open)return;stage.classList.add('fade');loop=setTimeout(()=>{if($('howto').open)play();},450);},(steps[step].dur*1000+900)/F.getSpeed('howto'));}
 function go(n){step=Math.max(0,Math.min(steps.length-1,n));renderStep();}
 function open(){if(!layout.length)return;$('howto').showModal();go(0);localStorage.setItem('knn-microbe-howto','1');}
 function close(){clearTimeout(loop);$('howto').close();}
