@@ -54,11 +54,22 @@ function verdictScene(svg,layout,v){const site=layout.find(s=>s.id===v.site),by=
  if(site.nutrient&&v.points>=2){const gb=pill(overlay,site.x,site.y+(v.card==='nutrient'?26:15),44,10,'금색 자리 2점!','#fff0c3','#9a741d',5.2);pop(gb,t+.4);t+=.4;}
  if(v.card==='retry'&&!v.rerolled){const rb=pill(overlay,148,60,90,12,'마음에 안 들면 한 번 더 뽑기!',PURPLE,'white',6);pop(rb,t+.5);t+=.5;}
  return (t+1.0)/speed;}
+/* 세균 비: 구름이 나타나고 세균 1마리가 자리에 떨어진다. 좌표계는 게임판 viewBox. 총 길이(초) */
+function cloud(parent,x,y){const g=el('g',{},parent);[[0,0,11],[-10,3,8],[10,3,8],[-4,-4,7],[6,-4,7]].forEach(([dx,dy,r])=>el('circle',{cx:x+dx,cy:y+dy,r,fill:'#dfe6ea',stroke:'#9aa6a0','stroke-width':.5},g));return g;}
+function rainDrop(parent,site,color,t){const c=cloud(parent,site.x,site.y-34);showAt(c,t,true,-8);
+ for(let i=0;i<5;i++){const d=el('line',{x1:site.x-8+i*4,y1:site.y-24,x2:site.x-9+i*4,y2:site.y-18,stroke:'#7fb3d5','stroke-width':.8,'stroke-linecap':'round',opacity:0},parent);el('animate',{attributeName:'opacity',values:'0;1;0',keyTimes:'0;.3;1',begin:(t+.5+i*.12)+'s',dur:'.6s',fill:'freeze'},d);}
+ const drop=microbe(parent,{x:site.x,y:site.y-30},color);drop.setAttribute('opacity',0);el('set',{attributeName:'opacity',to:1,begin:(t+.9)+'s',fill:'freeze'},drop);
+ el('animateTransform',{attributeName:'transform',type:'translate',values:'0 0;0 30;0 26;0 30',keyTimes:'0;.6;.8;1',begin:(t+.9)+'s',dur:'.8s',fill:'freeze',calcMode:'spline',keySplines:'.4 0 1 1;0 0 .6 1;.4 0 .6 1'},drop);
+ hideAt(c,t+2.2,.4);return drop;}
+function playRain(svg,layout,e){return run('game',()=>{const site=layout.find(s=>s.id===e.site);try{svg.pauseAnimations();svg.setCurrentTime(0);svg.unpauseAnimations();}catch{}const overlay=el('g',{'class':'fx'},svg);
+ rainDrop(overlay,site,e.color,0);
+ const label=pill(overlay,148,60,96,12,`☔ 세균 비! ${e.color==='red'?'빨강':'파랑'} 1마리가 내려왔어요`,'#dcecf5',INK,5.6);pop(label,1.6);hideAt(label,3.2,.4);
+ return 3.6/speed;});}
 /* 배속 버튼(.speed-toggle[data-scope=game|howto]). 장면을 그리는 동안 run(scope, fn)으로 그 배속을 적용한다 */
 function getSpeed(scope='game'){return pref[scope]||1;}
 function setSpeed(v,scope='game'){pref[scope]=v===2?2:1;try{localStorage.setItem(KEYS[scope],String(pref[scope]));}catch{}syncSpeedButtons();}
 function run(scope,fn){const prev=speed;speed=getSpeed(scope);try{return fn();}finally{speed=prev;}}
 function syncSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{const on=getSpeed(b.dataset.scope||'game')===2;b.textContent=on?'⚡ 모션 2배속':'모션 1배속';b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});}
 function bindSpeedButtons(){document.querySelectorAll('.speed-toggle').forEach(b=>{const scope=b.dataset.scope||'game';b.onclick=()=>setSpeed(getSpeed(scope)===2?1:2,scope);});syncSpeedButtons();}
-return {el,txt,rect,showAt,hideAt,pop,fly,microbe,sheet,dice,scan,badge,ballot,pill,playVerdict,getSpeed,setSpeed,run,bindSpeedButtons,INK,PURPLE,RED};
+return {el,txt,rect,showAt,hideAt,pop,fly,microbe,sheet,dice,scan,badge,ballot,pill,playVerdict,playRain,rainDrop,getSpeed,setSpeed,run,bindSpeedButtons,INK,PURPLE,RED};
 })();

@@ -14,7 +14,7 @@ test('two full boards: 24 moves, swap colors and first player, exact birth score
    const color=ids.filter(s=>r.game.board[s.id]==='red').length>p.k/2?'red':'blue';const site=E.sites.find(s=>s.id===p.site),points=1+Number(site.nutrient&&t>=7)+Number(p.card.type==='nutrient');expected[color==='red'?r.redIndex:1-r.redIndex]+=points;
    r=E.apply(r,actor,{type:'confirm',version:r.version},rng);assert.deepEqual(r.totals,expected);count++;
   }
-  assert.equal(r.game.log.length,12);assert.equal(Object.keys(r.game.board).length,18);assert.equal(r.game.cards.length,0);
+  assert.equal(r.game.log.length,12);assert.equal(Object.keys(r.game.board).length,20);assert.equal(r.game.cards.length,0);assert.equal(r.game.rains.length,2);
   if(leg===1){assert.equal(r.status,'between');r=E.apply(r,'alice',{type:'ready',version:r.version},rng);r=E.apply(r,'bob',{type:'ready',version:r.version},rng);assert.equal(r.firstIndex,1-first);assert.equal(r.redIndex,1-red);}
  }
  assert.equal(count,24);assert.equal(r.status,'finished');assert.deepEqual(r.totals,expected);
@@ -38,4 +38,22 @@ test('rooms created before hidden cards (no open flag) are treated as first card
  let r=start();r.game.cards=r.game.cards.map(({id,type})=>({id,type}));const actor=r.players[E.actorIndex(r)];
  const v=E.view(r,actor);assert.deepEqual(v.game.cards.map(c=>c.open),[true,false,false]);assert.equal(v.game.cards[0].type,r.game.cards[0].type);
  r=E.apply(r,actor,{type:'choose',version:r.version,site:r.game.candidates[0],cardId:r.game.cards[0].id},rng);assert.equal(r.game.phase,'reveal');assert.equal(r.game.cards[0].open,true);
+});
+test('microbe rain: twice per leg on distinct turns 3~10, trailing player color, no points, hidden schedule',()=>{
+ for(let seed=0;seed<40;seed++){
+  let x=seed*2654435761>>>0;const rnd=n=>{x=(x*1664525+1013904223)>>>0;return x%n;};
+  let r=E.newRoom('1',1);r.players=['alice','bob'];r=E.apply(r,'alice',{type:'ready',version:r.version},rnd);r=E.apply(r,'bob',{type:'ready',version:r.version},rnd);
+  assert.equal(E.view(r,'alice').game.rainTurns,undefined);assert.deepEqual(E.view(r,'alice').game.rains,[]);
+  let count=0;
+  while(r.status==='playing'){
+   const actor=r.players[E.actorIndex(r)],before=Object.keys(r.game.board).length,totals=[...r.totals],redIndex=r.redIndex;
+   r=E.apply(r,actor,move(r),rnd);r=E.apply(r,actor,{type:'confirm',version:r.version},rnd);
+   const grew=Object.keys(r.game.board).length-before;if(!r.game)break;
+   if(grew===2){count++;const e=r.game.rains[r.game.rains.length-1];assert.ok(e.turn>=3&&e.turn<=10);assert.equal(e.turn,r.game.turn);
+    const diff=r.totals[redIndex]-r.totals[1-redIndex];if(diff!==0)assert.equal(e.color,diff<0?'red':'blue');
+    assert.equal(r.totals[0]+r.totals[1],totals[0]+totals[1]+r.game.log[r.game.log.length-1].points);}
+   else assert.equal(grew,1);
+  }
+  assert.equal(count,2);assert.equal(new Set(r.game.rains.map(e=>e.turn)).size,2);
+ }
 });

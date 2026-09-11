@@ -89,6 +89,14 @@ const steps=[
   const w=cname(red>blue?'red':'blue');const win=el('g',{},p);rect(win,400,212,200,44,red>blue?'#fde3df':'#dcecf5','none',10);txt(win,`${w}이 더 많아요 → ${w} 승리!`,500,240,15,{bold:true,anchor:'middle'});showAt(win,3.6);
   const born=el('g',{},b.g);el('circle',{cx:site.x,cy:site.y,r:7.5,fill:'white'},born);microbe(born,site,red>blue?'red':'blue');pop(born,4.4);
   const res=el('g',{},p);rect(res,400,268,200,48,'#fff3d7','none',10);txt(res,`${w} 미생물 탄생! +1점`,500,298,17,{bold:true,anchor:'middle'});showAt(res,4.6);}},
+ {title:'세균 비',text:'한 판에 두 번, 아무 때나 하늘에서 세균이 떨어져요! 점수가 뒤진 사람 색 1마리가 빈자리에 생겨요. 점수는 없지만 다음 투표를 도와줘요.',dur:6,draw(s){
+  const b=board(s,30,20,320,{board:SAMPLE});const site=b.site(10);
+  F.rainDrop(b.g,site,'blue',.6);
+  const p=panel(s,'☔ 세균 비');txt(p,'지금 점수',400,96,14,{fill:'#607766'});
+  const sc=(y,who,c,pts,lead)=>{const g=el('g',{},p);rect(g,400,y,200,36,'white',c==='red'?'#e6a09b':'#92c7df',8);txt(g,`${who} · ${cname(c)}`,412,y+23,14,{bold:lead});txt(g,pts+'점',588,y+24,16,{bold:true,anchor:'end'});};
+  sc(108,'나','red',6,true);sc(150,'상대','blue',2,false);
+  const n1=el('g',{},p);rect(n1,400,204,200,50,'#fff3d7','none',10);txt(n1,'파랑이 뒤져 있어요.',500,225,14,{anchor:'middle'});txt(n1,'하늘에서 파랑 1마리가 뚝!',500,245,14,{bold:true,anchor:'middle'});showAt(n1,1.0);
+  const n2=el('g',{},p);rect(n2,400,266,200,48,'#dcecf5','none',10);txt(n2,'점수는 없지만',500,286,13,{anchor:'middle'});txt(n2,'가까운 자리 투표에서 한 표!',500,304,13,{bold:true,anchor:'middle'});showAt(n2,2.8);}},
  {title:'점수와 승리',text:'태어난 색이 점수를 얻어요. 12번 하면 1판 끝! 색을 바꿔 2판을 하고, 두 판 점수를 더해 많은 사람이 이겨요.',dur:8,draw(s){
   const score=(g,x,y,who,color,pts)=>{rect(g,x,y,290,80,'white',color==='red'?'#e6a09b':'#92c7df',16);txt(g,`${who} · ${cname(color)}`,x+20,y+48,18);txt(g,pts+'점',x+270,y+54,32,{bold:true,anchor:'end'});};
   txt(s,'1/2판 · 12/12차례',20,40,20,{bold:true});const s1=el('g',{},s);score(s1,20,60,'나','red',5);score(s1,330,60,'상대','blue',4);

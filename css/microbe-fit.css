@@ -37,7 +37,7 @@ aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .panel{margin:0;padding:12px 14px;flex:none}
 #game-panel{display:flex;flex-direction:column;gap:8px}
 .card-hint{margin:0;font-size:14px;color:#60766a;line-height:1.45}
-.cards{--ch:clamp(130px,26vh,210px);margin:0;gap:8px;justify-content:center;perspective:700px}
+.cards{--ch:clamp(120px,24vh,200px);margin:0;gap:8px;justify-content:center;perspective:700px}
 .card{width:auto;flex:none;border-radius:8px}
 .card img{height:var(--ch);width:auto}
 .card-detail{min-height:0;font-size:14px;padding:8px 10px;line-height:1.5}
